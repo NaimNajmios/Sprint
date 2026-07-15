@@ -41,8 +41,7 @@ object AiModule {
     @Provides
     @Singleton
     fun provideGroqClient(httpClient: HttpClient): GroqClient {
-        // In a real app, this should be securely injected via BuildConfig or Secrets Plugin
-        val apiKey = "gsk_..." // Placeholder or load from config
+        val apiKey = com.najmi.sprint.core.ai.BuildConfig.GROQ_API_KEY
         return GroqClient(httpClient, apiKey)
     }
 
