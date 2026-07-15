@@ -7,7 +7,9 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.najmi.sprint.tracking.ClassificationWorker
@@ -39,15 +41,28 @@ class SprintApplication : Application(), Configuration.Provider {
             .setRequiresBatteryNotLow(true)
             .build()
 
-        // Phase 3f: Run classification batch job every 6 hours
-        val workRequest = PeriodicWorkRequestBuilder<ClassificationWorker>(6, TimeUnit.HOURS)
+        // Run classification batch job every 6 hours
+        val periodicRequest = PeriodicWorkRequestBuilder<ClassificationWorker>(6, TimeUnit.HOURS)
             .setConstraints(constraints)
             .build()
 
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "ClassificationWorker",
+        // FOR TESTING: Run it immediately once so we can verify it works
+        val immediateRequest = OneTimeWorkRequestBuilder<ClassificationWorker>()
+            .setConstraints(constraints)
+            .build()
+
+        val workManager = WorkManager.getInstance(this)
+        
+        workManager.enqueueUniquePeriodicWork(
+            "ClassificationWorkerPeriodic",
             ExistingPeriodicWorkPolicy.KEEP,
-            workRequest
+            periodicRequest
+        )
+
+        workManager.enqueueUniqueWork(
+            "ClassificationWorkerImmediate",
+            ExistingWorkPolicy.REPLACE,
+            immediateRequest
         )
     }
 }
