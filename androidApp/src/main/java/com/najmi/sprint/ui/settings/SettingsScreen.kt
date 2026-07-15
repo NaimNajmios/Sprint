@@ -1,0 +1,136 @@
+package com.najmi.sprint.ui.settings
+
+import android.app.ActivityManager
+import android.content.Context
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Error
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.najmi.sprint.tracking.TrackingService
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(
+    viewModel: SettingsViewModel = hiltViewModel()
+) {
+    val lastTrackedTime by viewModel.lastTrackedSessionTime.collectAsState()
+    val context = LocalContext.current
+    
+    // Check if service is currently running
+    val isServiceRunning = isTrackingServiceRunning(context)
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Settings", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Tracking Health",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            HealthCard(
+                title = "Foreground Service",
+                subtitle = if (isServiceRunning) "Running and active" else "Service is stopped",
+                isHealthy = isServiceRunning
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            HealthCard(
+                title = "Last Logged Session",
+                subtitle = formatLastTrackedTime(lastTrackedTime),
+                isHealthy = lastTrackedTime != null
+            )
+        }
+    }
+}
+
+@Composable
+private fun HealthCard(title: String, subtitle: String, isHealthy: Boolean) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (isHealthy) Icons.Rounded.CheckCircle else Icons.Rounded.Error,
+                contentDescription = null,
+                tint = if (isHealthy) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(32.dp)
+            )
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Suppress("DEPRECATION")
+private fun isTrackingServiceRunning(context: Context): Boolean {
+    val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+    for (service in manager.getRunningServices(Int.MAX_VALUE)) {
+        if (TrackingService::class.java.name == service.service.className) {
+            return true
+        }
+    }
+    return false
+}
+
+private fun formatLastTrackedTime(instant: Instant?): String {
+    if (instant == null) return "No data recorded yet"
+    val local = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+    return "Last seen at ${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
+}
