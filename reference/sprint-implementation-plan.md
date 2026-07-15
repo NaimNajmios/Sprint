@@ -38,6 +38,7 @@ sprint/
 ├── core-data/         # repository interfaces + Room impl + sync client interface
 ├── core-sync/         # event log merge logic — isolated, heavily unit-tested
 ├── core-ai/           # LLM client, prompt templates, actor-critic orchestration
+├── core-testing/      # fake clock, fixture/seed generators, debug-menu logic — debug builds only, never shipped
 ├── feature-tracker/   # Compose UI: live tracking, session list
 ├── feature-kanban/    # Compose UI: task board
 ├── feature-retro/     # Compose UI: weekly retro view
@@ -62,6 +63,17 @@ Set this structure up **before writing any feature code** — retrofitting modul
 - [ ] Simple local feature-flag system (e.g. a config object gating Phase 12 physical-tracking code paths) — lets you ship the Android MVP without half-built location code interfering
 - [ ] Start an `ENGINEERING_DECISIONS.md` file now, add one entry per notable tradeoff as you make it (e.g. "why last-write-wins over CRDTs") — much easier to write in the moment than reconstruct later
 - [ ] Write the README skeleton now, not at the end — architecture diagram, module table, "why this exists" section, tech stack badges. Update it as you go so it never falls stale.
+
+### 0a. Dev Testing Harness (build alongside the foundation, not after)
+
+This is what lets you test a day/week of usage — or the weekly retro, rule decay, sync convergence — in seconds instead of actually living through it. Load-bearing for iteration speed on everything after Phase 1; retrofitting it later is expensive because it means threading a `Clock` abstraction through code that didn't originally have one.
+
+- [ ] **Injectable `Clock` interface** — wrap every `Clock.System.now()` call in business logic behind an interface; production uses the real system clock, debug builds swap in a `FakeClock` that can be advanced manually (`advanceBy(7.days)`). This alone unlocks testing the weekly retro job, rule staleness decay, and vacation-mode triggers without waiting real days
+- [ ] **Fixture/seed generator** (`core-testing`): functions producing a realistic fake day/week of `Session` objects — varied apps, durations, gaps, weekday/weekend patterns — writable straight into local Room. Populates the UI (widget, Kanban, retro) before you've ever really used the app
+- [ ] **Hidden debug menu** (debug builds only): buttons to simulate a day/week of usage, inject a synthetic app-switch or geofence event, force-run the weekly retro job immediately, and fast-forward the rule table by N weeks to test decay
+- [ ] **Record-and-replay fixture:** once you have one real day of usage, export it as a JSON fixture; replay it into a fresh install for regression testing going forward — more realistic than synthetic data since it captures your actual messy patterns (ambiguous sessions, rapid app-bouncing), and becomes the seed for the Phase 13 accuracy eval set
+
+**Exit criteria:** Can generate a fake week, force-run the retro job against it, and see a populated retro screen — all without the app having run for a single real day.
 
 **Exit criteria:** Empty app installs on a device, CI badge is green.
 
@@ -213,7 +225,7 @@ Contexts are **dynamic, not fixed** — the 4 seeded at onboarding are just a st
 
 ### 3f. Classification Calibration Week (no new features)
 
-- [ ] A dedicated week between the classifier build and Kanban work: just live with the review queue daily, tune the confidence threshold against the real accuracy metric, harden/prune the rule table before building anything else on top of it. Classification accuracy reliably looks solved against test cases and then needs real-usage tuning — budget for that explicitly rather than assuming Phase 3 code is "done" once it passes tests.
+- [ ] A dedicated week between the classifier build and Kanban work: just live with the review queue daily, tune the confidence threshold against the real accuracy metric, harden/prune the rule table before building anything else on top of it. Classification accuracy reliably looks solved against test cases and then needs real-usage tuning — budget for that explicitly rather than assuming Phase 3 code is "done" once it passes tests. Use the debug menu's synthetic app-switch injection (Phase 0a) to stress-test edge cases you haven't personally hit yet, alongside real daily usage.
 
 **Exit criteria:** After a normal day of usage, >80% of sessions are auto-classified correctly with zero manual input; the remainder surface as a short review queue, not a wall of unlabeled data.
 
@@ -430,4 +442,3 @@ Given you're doing this alongside an internship and exam prep, treat each phase 
 | CI | GitHub Actions | New — fills current gap |
 | Location (Phase 12) | Geofencing API | New |
 | Activity (Phase 12) | Activity Recognition API | New |
-
