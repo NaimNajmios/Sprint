@@ -65,10 +65,21 @@ If this recurs after adding new `@AndroidEntryPoint`, `@HiltViewModel`, or `@Inj
 2. **If that works but Android Studio still fails**: Clear `~/.gradle/caches/build-cache-1/` and rebuild.
 3. **Do not trust** Android Studio's "Invalidate Caches" for Gradle-level cache issues.
 
+## Additional Build Fix: `compileSdk = 36` Warning Suppression
+AGP 8.4.0 was only tested up to `compileSdk = 34`, producing a noisy warning on every build. Per Google's own build output recommendation, added `android.suppressUnsupportedCompileSdk=36` to `gradle.properties`. The warning was cosmetic — the build always succeeded, but the noise obscured real errors.
+
 ## Verification
-- Built successfully under AGP 8.4.0.
+- Built successfully under AGP 8.4.0 with zero warnings (after suppression).
 - `SettingsScreen` successfully binds to the `SessionRepository` flow to emit the last seen tracking timestamp.
 - Android 14 Foreground service metadata validations pass.
+
+## Testing
+To verify the core logic without requiring real device deployment, unit tests were written for the `TrackingEngine` state machine using `MockK` and `kotlinx-coroutines-test`. 
+The `pollAndUpdate` function was made `internal` to allow direct, synchronous testing of the following state transitions:
+1. **Empty State**: Ignores empty polling results (idle intervals).
+2. **Session Creation**: Successfully creates a new `Session` on the first detected app.
+3. **Deduplication**: Safely ignores sequential polls of the exact same app.
+4. **Session Closing**: Automatically stamps `endTime` on the previous session when a new app switch is detected.
 
 ## Completion Status
 The background logic and user-facing permission screens for Phase 2 are completely finished and integrated into the main application flow. The raw data pipeline is fully operational.

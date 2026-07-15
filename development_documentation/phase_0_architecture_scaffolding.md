@@ -47,13 +47,14 @@ graph TD
 All dependencies are centralized in `gradle/libs.versions.toml`. 
 Key technology choices include:
 - **Kotlin**: 2.1.0
-- **AGP**: 8.9.1 (with Gradle 8.11.1 wrapper)
+- **AGP**: 8.4.0 (with Gradle 8.7 wrapper) — downgraded from 8.9.1 due to Android Studio compatibility ceiling
 - **Hilt**: 2.56 (using KSP 2.1.0-1.0.29, maintaining compatibility with Kotlin 2.1.0)
-- **Compose**: BOM 2026.06.01
+- **Compose**: BOM 2024.06.00 — pinned to the latest BOM compatible with AGP 8.4.0
 - **Room**: 2.7.1
 - **Ktor**: 3.0.1
+- **compileSdk / targetSdk**: 36 (produces a warning with AGP 8.4.0, but functions correctly)
 
-*Engineering Decision Note:* We explicitly downgraded `kotlinx-datetime` to `0.6.1` and `Kotlin` to `2.1.0` due to Hilt 2.56's metadata incompatibility with Kotlin 2.3+.
+*Engineering Decision Note:* We explicitly downgraded `kotlinx-datetime` to `0.6.1` and `Kotlin` to `2.1.0` due to Hilt 2.56's metadata incompatibility with Kotlin 2.3+. AGP was further downgraded from 8.9.1 to 8.4.0 because the user's Android Studio (Koala) only supports up to AGP 8.4.0, which cascaded downgrades to `core-ktx` (1.13.1), `activity-compose` (1.9.0), `navigation-compose` (2.7.7), `hilt-navigation-compose` (1.2.0), and `work-runtime-ktx` (2.9.0).
 
 ### CI/CD and Static Analysis
 - **GitHub Actions**: A `ci.yml` pipeline is set up to run `./gradlew assembleDebug`, `test`, `detekt`, and `lint` on every push/PR to `main` and `develop`.

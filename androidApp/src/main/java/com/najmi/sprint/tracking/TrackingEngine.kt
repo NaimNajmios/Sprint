@@ -52,7 +52,7 @@ class TrackingEngine @Inject constructor(
         }
     }
 
-    private suspend fun pollAndUpdate() {
+    internal suspend fun pollAndUpdate() {
         val event = usageStatsTracker.pollRecentForegroundApp()
         
         if (event == null) {
@@ -93,7 +93,7 @@ class TrackingEngine @Inject constructor(
         currentPackage = newPackage
     }
 
-    private suspend fun closeActiveSession(endTime: Instant) {
+    internal suspend fun closeActiveSession(endTime: Instant) {
         activeSessionId?.let { id ->
             val session = sessionRepository.getSessionById(id)
             if (session != null && session.endTime == null) {
