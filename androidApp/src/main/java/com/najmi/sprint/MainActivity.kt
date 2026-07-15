@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.ui.theme.SprintTheme
@@ -17,6 +20,7 @@ import com.najmi.sprint.tracking.TrackingService
 import com.najmi.sprint.ui.permissions.PermissionViewModel
 import com.najmi.sprint.ui.permissions.UsagePermissionScreen
 import com.najmi.sprint.ui.settings.SettingsScreen
+import com.najmi.sprint.ui.onboarding.OnboardingScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -28,6 +32,7 @@ class MainActivity : ComponentActivity() {
             SprintTheme {
                 val permissionViewModel: PermissionViewModel = hiltViewModel()
                 val hasPermission by permissionViewModel.hasUsagePermission.collectAsState()
+                var showOnboarding by rememberSaveable { mutableStateOf(true) }
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val modifier = Modifier.padding(innerPadding)
@@ -39,10 +44,10 @@ class MainActivity : ComponentActivity() {
                             },
                             viewModel = permissionViewModel
                         )
-                    } else {
-                        // Start service if not already started
+                    } else if (showOnboarding) {
                         startTrackingService()
-                        // Show the tracking health screen for now
+                        OnboardingScreen(onComplete = { showOnboarding = false })
+                    } else {
                         SettingsScreen()
                     }
                 }

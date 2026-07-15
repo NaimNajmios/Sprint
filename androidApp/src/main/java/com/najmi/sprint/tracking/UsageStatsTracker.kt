@@ -46,4 +46,26 @@ class UsageStatsTracker @Inject constructor(
         val packageName: String,
         val timestamp: Long
     )
+
+    /**
+     * Gets the top most used applications over the last [days] days.
+     * Used for the Phase 3a Onboarding Screen to seed classification rules.
+     */
+    fun getTopRecentApps(days: Int = 3, limit: Int = 10): List<String> {
+        val now = Clock.System.now().toEpochMilliseconds()
+        val start = now - (days * 24 * 60 * 60 * 1000L)
+        
+        val stats = usageStatsManager.queryUsageStats(
+            UsageStatsManager.INTERVAL_DAILY,
+            start,
+            now
+        )
+        
+        return stats
+            .filter { it.totalTimeInForeground > 0 }
+            .sortedByDescending { it.totalTimeInForeground }
+            .map { it.packageName }
+            .distinct()
+            .take(limit)
+    }
 }
