@@ -16,4 +16,6 @@ interface SessionRepository {
     suspend fun updateSession(session: Session)
     suspend fun closeActiveSession(endTime: Instant)
     suspend fun getSessionsBetween(start: Instant, end: Instant): List<Session>
+    suspend fun deleteSession(id: String)
+    suspend fun getLastClosedSession(): Session?
 }

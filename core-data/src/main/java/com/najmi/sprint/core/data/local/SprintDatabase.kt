@@ -20,7 +20,8 @@ import com.najmi.sprint.core.data.local.entity.TaskEntity
         ProjectEntity::class,
         SessionEntity::class,
         TaskEntity::class,
-        RetroEntryEntity::class
+        RetroEntryEntity::class,
+        com.najmi.sprint.core.data.local.entity.ClassificationRuleEntity::class
     ],
     version = 1,
     exportSchema = false
@@ -32,4 +33,5 @@ abstract class SprintDatabase : RoomDatabase() {
     abstract fun sessionDao(): SessionDao
     abstract fun taskDao(): TaskDao
     abstract fun retroDao(): RetroDao
+    abstract fun ruleDao(): com.najmi.sprint.core.data.local.dao.RuleDao
 }

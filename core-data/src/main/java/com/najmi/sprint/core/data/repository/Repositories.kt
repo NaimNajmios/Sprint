@@ -110,6 +110,13 @@ class RoomSessionRepository @Inject constructor(
 
     override suspend fun getSessionsBetween(start: Instant, end: Instant): List<Session> =
         dao.getSessionsBetween(start, end).map { it.toDomain() }
+
+    override suspend fun deleteSession(id: String) {
+        dao.deleteSession(id)
+    }
+
+    override suspend fun getLastClosedSession(): Session? =
+        dao.getLastClosedSession()?.toDomain()
 }
 
 class RoomTaskRepository @Inject constructor(
@@ -156,4 +163,22 @@ class RoomRetroRepository @Inject constructor(
 
     override suspend fun getLatestRetro(): RetroEntry? =
         dao.getLatestRetro()?.toDomain()
+}
+
+class RoomRuleRepository @Inject constructor(
+    private val dao: com.najmi.sprint.core.data.local.dao.RuleDao
+) : com.najmi.sprint.core.domain.repository.RuleRepository {
+    override suspend fun getRuleForPackage(packageName: String): com.najmi.sprint.core.domain.model.ClassificationRule? =
+        dao.getRuleForPackage(packageName)?.toDomain()
+
+    override suspend fun insertOrUpdateRule(rule: com.najmi.sprint.core.domain.model.ClassificationRule) {
+        dao.insertRule(rule.toEntity())
+    }
+
+    override suspend fun getAllRules(): List<com.najmi.sprint.core.domain.model.ClassificationRule> =
+        dao.getAllRules().map { it.toDomain() }
+
+    override suspend fun deleteRule(packageName: String) {
+        dao.deleteRule(packageName)
+    }
 }

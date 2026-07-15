@@ -73,6 +73,9 @@ object DatabaseModule {
 
     @Provides
     fun provideRetroDao(database: SprintDatabase): RetroDao = database.retroDao()
+
+    @Provides
+    fun provideRuleDao(database: SprintDatabase): com.najmi.sprint.core.data.local.dao.RuleDao = database.ruleDao()
 }
 
 class SprintDatabaseCallback(
@@ -125,4 +128,10 @@ abstract class RepositoryModule {
     abstract fun bindRetroRepository(
         impl: RoomRetroRepository
     ): RetroRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindRuleRepository(
+        impl: com.najmi.sprint.core.data.repository.RoomRuleRepository
+    ): com.najmi.sprint.core.domain.repository.RuleRepository
 }

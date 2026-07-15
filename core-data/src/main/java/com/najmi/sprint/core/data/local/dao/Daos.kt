@@ -84,6 +84,12 @@ interface SessionDao {
 
     @Query("SELECT * FROM sessions WHERE startTime >= :start AND startTime <= :end")
     suspend fun getSessionsBetween(start: Instant, end: Instant): List<SessionEntity>
+
+    @Query("DELETE FROM sessions WHERE id = :id")
+    suspend fun deleteSession(id: String)
+
+    @Query("SELECT * FROM sessions WHERE endTime IS NOT NULL ORDER BY endTime DESC LIMIT 1")
+    suspend fun getLastClosedSession(): SessionEntity?
 }
 
 @Dao
@@ -123,4 +129,19 @@ interface RetroDao {
 
     @Query("SELECT * FROM retros ORDER BY weekOf DESC LIMIT 1")
     suspend fun getLatestRetro(): RetroEntryEntity?
+}
+
+@Dao
+interface RuleDao {
+    @Query("SELECT * FROM classification_rules WHERE packageName = :packageName")
+    suspend fun getRuleForPackage(packageName: String): com.najmi.sprint.core.data.local.entity.ClassificationRuleEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertRule(rule: com.najmi.sprint.core.data.local.entity.ClassificationRuleEntity)
+
+    @Query("SELECT * FROM classification_rules")
+    suspend fun getAllRules(): List<com.najmi.sprint.core.data.local.entity.ClassificationRuleEntity>
+
+    @Query("DELETE FROM classification_rules WHERE packageName = :packageName")
+    suspend fun deleteRule(packageName: String)
 }

@@ -2,6 +2,7 @@ package com.najmi.sprint.tracking
 
 import com.najmi.sprint.core.domain.model.Session
 import com.najmi.sprint.core.domain.model.SessionSource
+import com.najmi.sprint.core.domain.repository.RuleRepository
 import com.najmi.sprint.core.domain.repository.SessionRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +18,7 @@ import javax.inject.Singleton
 @Singleton
 class TrackingEngine @Inject constructor(
     private val sessionRepository: SessionRepository,
+    private val ruleRepository: RuleRepository,
     private val usageStatsTracker: UsageStatsTracker
 ) {
     private var trackingJob: Job? = null
@@ -70,26 +72,52 @@ class TrackingEngine @Inject constructor(
         // Ignore if it's the exact same app we are already tracking
         if (newPackage == currentPackage) return
 
-        // Wait, debouncing logic (Phase 3b):
-        // If the switch time is extremely close to the current session start, it might be a transient notification click.
-        // For now (Phase 2), we just strictly log all distinct switches. Debouncing will be added in Phase 3.
-
-        // Close the previous session
+        // Phase 3b: Debounce & Merge
+        val previousSessionId = activeSessionId
         closeActiveSession(switchTime)
 
-        // Only start a new session if it's not the launcher/system UI (Optional filtering, but we track everything for MVP)
-        val newSessionId = UUID.randomUUID().toString()
-        val newSession = Session(
-            id = newSessionId,
-            deviceId = deviceId,
-            source = SessionSource.APP_USAGE,
-            rawLabel = newPackage,
-            startTime = switchTime
-        )
+        var sessionToReopen: Session? = null
+
+        if (previousSessionId != null) {
+            val previousSession = sessionRepository.getSessionById(previousSessionId)
+            if (previousSession != null && previousSession.endTime != null) {
+                val durationMs = previousSession.endTime!!.toEpochMilliseconds() - previousSession.startTime.toEpochMilliseconds()
+                
+                // Debounce: If the session was less than 10 seconds, it's a transient switch (e.g., notification glance). Drop it.
+                if (durationMs < 10_000L) {
+                    sessionRepository.deleteSession(previousSession.id)
+                }
+            }
+        }
+
+        // Merge: Check if we are switching back to the same app we were using recently
+        val lastClosed = sessionRepository.getLastClosedSession()
+        if (lastClosed != null && lastClosed.rawLabel == newPackage && lastClosed.endTime != null) {
+            val gapMs = switchTime.toEpochMilliseconds() - lastClosed.endTime!!.toEpochMilliseconds()
+            // If the gap is less than 2 minutes, merge them by reopening the last closed session
+            if (gapMs < 120_000L) {
+                sessionToReopen = lastClosed
+            }
+        }
+
+        if (sessionToReopen != null) {
+            // Reopen the existing session rather than creating a new one
+            sessionRepository.updateSession(sessionToReopen.copy(endTime = null))
+            activeSessionId = sessionToReopen.id
+        } else {
+            // Create a brand new session
+            val newSessionId = UUID.randomUUID().toString()
+            val newSession = Session(
+                id = newSessionId,
+                deviceId = deviceId,
+                source = SessionSource.APP_USAGE,
+                rawLabel = newPackage,
+                startTime = switchTime
+            )
+            sessionRepository.insertSession(newSession)
+            activeSessionId = newSessionId
+        }
         
-        sessionRepository.insertSession(newSession)
-        
-        activeSessionId = newSessionId
         currentPackage = newPackage
     }
 
@@ -97,7 +125,14 @@ class TrackingEngine @Inject constructor(
         activeSessionId?.let { id ->
             val session = sessionRepository.getSessionById(id)
             if (session != null && session.endTime == null) {
-                sessionRepository.updateSession(session.copy(endTime = endTime))
+                // Phase 3c: Rule-Based Pre-filter
+                val rule = ruleRepository.getRuleForPackage(session.rawLabel)
+                val resolvedContextId = rule?.contextId
+                
+                sessionRepository.updateSession(session.copy(
+                    endTime = endTime,
+                    contextId = resolvedContextId
+                ))
             }
         }
         activeSessionId = null

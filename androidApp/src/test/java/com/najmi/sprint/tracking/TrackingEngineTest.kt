@@ -17,14 +17,16 @@ import org.junit.Test
 class TrackingEngineTest {
 
     private lateinit var sessionRepository: SessionRepository
+    private lateinit var ruleRepository: com.najmi.sprint.core.domain.repository.RuleRepository
     private lateinit var usageStatsTracker: UsageStatsTracker
     private lateinit var engine: TrackingEngine
 
     @Before
     fun setup() {
         sessionRepository = mockk(relaxed = true)
+        ruleRepository = mockk(relaxed = true)
         usageStatsTracker = mockk(relaxed = true)
-        engine = TrackingEngine(sessionRepository, usageStatsTracker)
+        engine = TrackingEngine(sessionRepository, ruleRepository, usageStatsTracker)
     }
 
     @Test
@@ -98,5 +100,64 @@ class TrackingEngineTest {
 
         // Verify the second one was inserted
         coVerify(exactly = 2) { sessionRepository.insertSession(any()) }
+    }
+
+    @Test
+    fun `pollAndUpdate debounces sessions under 10 seconds`() = runBlocking {
+        val time1 = System.currentTimeMillis()
+        val time2 = time1 + 5_000 // 5 seconds later (under 10s debounce threshold)
+
+        // First app
+        coEvery { usageStatsTracker.pollRecentForegroundApp() } returns UsageStatsTracker.ForegroundEvent("com.test.app1", time1)
+        engine.pollAndUpdate()
+
+        val sessionSlot = slot<Session>()
+        coVerify(exactly = 1) { sessionRepository.insertSession(capture(sessionSlot)) }
+        
+        // Mock getSessionById for when we close it
+        val firstSession = sessionSlot.captured.copy(endTime = kotlinx.datetime.Instant.fromEpochMilliseconds(time2))
+        coEvery { sessionRepository.getSessionById(firstSession.id) } returns firstSession
+
+        // Second app
+        coEvery { usageStatsTracker.pollRecentForegroundApp() } returns UsageStatsTracker.ForegroundEvent("com.test.app2", time2)
+        engine.pollAndUpdate()
+
+        // Verify it was deleted due to debounce
+        coVerify(exactly = 1) { sessionRepository.deleteSession(firstSession.id) }
+    }
+
+    @Test
+    fun `pollAndUpdate merges session when switching back within 2 minutes`() = runBlocking {
+        val time1 = System.currentTimeMillis()
+        val time2 = time1 + 60_000 // 1 minute later (inside 2 min merge threshold)
+
+        // Setup the "last closed session" which was com.test.app1
+        val previousApp1Session = Session(
+            id = "old-session",
+            deviceId = "local-device",
+            source = com.najmi.sprint.core.domain.model.SessionSource.APP_USAGE,
+            rawLabel = "com.test.app1",
+            startTime = kotlinx.datetime.Instant.fromEpochMilliseconds(time1 - 30_000), // opened 30s ago
+            endTime = kotlinx.datetime.Instant.fromEpochMilliseconds(time1), // closed at time1
+            contextId = null,
+            projectId = null,
+            classificationConfidence = null,
+            isManuallyCorrected = false
+        )
+        
+        coEvery { sessionRepository.getLastClosedSession() } returns previousApp1Session
+
+        // Detect com.test.app1 again at time2
+        coEvery { usageStatsTracker.pollRecentForegroundApp() } returns UsageStatsTracker.ForegroundEvent("com.test.app1", time2)
+        engine.pollAndUpdate()
+
+        // It should update (reopen) the old session rather than inserting a new one
+        val updateSlot = slot<Session>()
+        coVerify(exactly = 1) { sessionRepository.updateSession(capture(updateSlot)) }
+        coVerify(exactly = 0) { sessionRepository.insertSession(any()) }
+        
+        val reopenedSession = updateSlot.captured
+        assertEquals("old-session", reopenedSession.id)
+        assertNull(reopenedSession.endTime) // endTime cleared to reopen it
     }
 }
