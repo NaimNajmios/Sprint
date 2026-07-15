@@ -1,0 +1,53 @@
+build:
+  maxIssues: 0
+  excludeCorrectable: false
+
+config:
+  validation: true
+  warningsAsErrors: false
+
+complexity:
+  LongMethod:
+    threshold: 60
+  LongParameterList:
+    functionThreshold: 8
+    constructorThreshold: 10
+  ComplexCondition:
+    threshold: 4
+  TooManyFunctions:
+    thresholdInFiles: 20
+    thresholdInClasses: 15
+    thresholdInInterfaces: 10
+
+style:
+  MagicNumber:
+    active: false  # Too noisy for Compose code
+  ReturnCount:
+    max: 4
+  WildcardImport:
+    active: true
+  MaxLineLength:
+    maxLineLength: 120
+    excludeCommentStatements: true
+  UnusedPrivateMember:
+    active: true
+    allowedNames: "(_|ignored|expected)"
+
+naming:
+  FunctionNaming:
+    functionPattern: "[a-zA-Z][a-zA-Z0-9]*"  # Allow PascalCase for Composables
+  TopLevelPropertyNaming:
+    constantPattern: "[A-Z][A-Za-z0-9]*|[a-z][a-zA-Z0-9]*"
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: true
+    exceptionNames:
+      - RuntimeException
+      - NullPointerException
+  TooGenericExceptionThrown:
+    active: true
+
+performance:
+  SpreadOperator:
+    active: false  # Common in vararg Compose modifier chains
