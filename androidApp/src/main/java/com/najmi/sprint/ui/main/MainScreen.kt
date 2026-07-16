@@ -34,6 +34,7 @@ import com.najmi.sprint.feature.tracker.TrackerScreen
 import com.najmi.sprint.feature.retro.RetroScreen
 import com.najmi.sprint.ui.settings.SettingsScreen
 import com.najmi.sprint.ui.context.ContextManagerScreen
+import com.najmi.sprint.ui.project.ProjectManagerScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -174,6 +175,17 @@ fun MainScreen(
             }
             composable("context_manager") {
                 ContextManagerScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToProjectManager = { contextId ->
+                        navController.navigate("project_manager/$contextId")
+                    }
+                )
+            }
+            composable(
+                route = "project_manager/{contextId}",
+                arguments = listOf(androidx.navigation.navArgument("contextId") { type = androidx.navigation.NavType.StringType })
+            ) {
+                ProjectManagerScreen(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

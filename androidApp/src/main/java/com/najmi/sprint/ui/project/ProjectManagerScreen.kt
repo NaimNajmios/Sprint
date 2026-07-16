@@ -1,4 +1,4 @@
-package com.najmi.sprint.ui.context
+package com.najmi.sprint.ui.project
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,7 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,23 +20,35 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.najmi.sprint.core.domain.model.Context
+import com.najmi.sprint.core.domain.model.Project
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ContextManagerScreen(
+fun ProjectManagerScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToProjectManager: (String) -> Unit = {},
-    viewModel: ContextManagerViewModel = hiltViewModel()
+    viewModel: ProjectManagerViewModel = hiltViewModel()
 ) {
-    val contexts by viewModel.contexts.collectAsState()
+    val projects by viewModel.projects.collectAsState()
+    val parentContext by viewModel.parentContext.collectAsState()
+    
     var showDialog by remember { mutableStateOf(false) }
-    var contextToEdit by remember { mutableStateOf<Context?>(null) }
+    var projectToEdit by remember { mutableStateOf<Project?>(null) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Manage Contexts", fontWeight = FontWeight.Bold) },
+                title = { 
+                    Column {
+                        Text("Manage Projects", fontWeight = FontWeight.Bold)
+                        if (parentContext != null) {
+                            Text(
+                                text = "in ${parentContext!!.name}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(android.graphics.Color.parseColor(parentContext!!.colorHex))
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
@@ -51,55 +63,70 @@ fun ContextManagerScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { 
-                    contextToEdit = null
+                    projectToEdit = null
                     showDialog = true 
                 },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Rounded.Add, contentDescription = "Add Context")
+                Icon(Icons.Rounded.Add, contentDescription = "Add Project")
             }
         }
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            item {
+        if (projects.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
-                    text = "Active Contexts",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 8.dp, top = 16.dp)
+                    text = "No projects yet.\nTap + to create one.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
-            
-            items(contexts) { context ->
-                ContextItem(
-                    context = context,
-                    onClick = { onNavigateToProjectManager(context.id) },
-                    onEdit = {
-                        contextToEdit = context
-                        showDialog = true
-                    },
-                    onDelete = {
-                        viewModel.deleteContext(context.id)
-                    }
-                )
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    Text(
+                        text = "Projects",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 8.dp, top = 16.dp)
+                    )
+                }
+                
+                items(projects) { project ->
+                    ProjectItem(
+                        project = project,
+                        defaultHex = parentContext?.colorHex ?: "#808080",
+                        onEdit = {
+                            projectToEdit = project
+                            showDialog = true
+                        },
+                        onDelete = {
+                            viewModel.deleteProject(project.id)
+                        }
+                    )
+                }
             }
         }
 
         if (showDialog) {
-            ContextEditDialog(
-                contextToEdit = contextToEdit,
+            ProjectEditDialog(
+                projectToEdit = projectToEdit,
+                parentContextHex = parentContext?.colorHex ?: "#808080",
                 onDismiss = { showDialog = false },
                 onSave = { name, colorHex ->
-                    if (contextToEdit != null) {
-                        viewModel.updateContext(contextToEdit!!.copy(name = name, colorHex = colorHex))
+                    if (projectToEdit != null) {
+                        viewModel.updateProject(projectToEdit!!.copy(name = name, colorHex = colorHex))
                     } else {
-                        viewModel.addContext(name, colorHex)
+                        viewModel.addProject(name, colorHex)
                     }
                     showDialog = false
                 }
@@ -109,16 +136,16 @@ fun ContextManagerScreen(
 }
 
 @Composable
-fun ContextItem(
-    context: Context,
-    onClick: () -> Unit,
+fun ProjectItem(
+    project: Project,
+    defaultHex: String,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick), // Now navigates to Project Manager
+            .clickable(onClick = onEdit),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
@@ -128,33 +155,34 @@ fun ContextItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val colorStr = project.colorHex ?: defaultHex
             Box(
                 modifier = Modifier
                     .size(24.dp)
-                    .background(color = Color(android.graphics.Color.parseColor(context.colorHex)), shape = CircleShape)
+                    .background(color = Color(android.graphics.Color.parseColor(colorStr)), shape = CircleShape)
             )
             
             Spacer(modifier = Modifier.width(16.dp))
             
-            Text(
-                text = context.name,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f)
-            )
-
-            IconButton(onClick = onEdit) {
-                Icon(
-                    imageVector = Icons.Rounded.Edit,
-                    contentDescription = "Edit Context",
-                    tint = MaterialTheme.colorScheme.primary
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = project.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
                 )
+                if (project.colorHex == null) {
+                    Text(
+                        text = "Inherits Context Color",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Rounded.Delete,
-                    contentDescription = "Delete Context",
+                    contentDescription = "Delete Project",
                     tint = MaterialTheme.colorScheme.error
                 )
             }
@@ -163,46 +191,32 @@ fun ContextItem(
 }
 
 @Composable
-fun ContextEditDialog(
-    contextToEdit: Context?,
+fun ProjectEditDialog(
+    projectToEdit: Project?,
+    parentContextHex: String,
     onDismiss: () -> Unit,
-    onSave: (String, String) -> Unit
+    onSave: (String, String?) -> Unit
 ) {
-    var name by remember { mutableStateOf(contextToEdit?.name ?: "") }
-    var selectedColor by remember { mutableStateOf(contextToEdit?.colorHex ?: "#FF5722") }
+    var name by remember { mutableStateOf(projectToEdit?.name ?: "") }
+    var selectedColor by remember { mutableStateOf<String?>(projectToEdit?.colorHex) }
 
     val presetColors = listOf(
-        "#FF5722", // Deep Orange
-        "#F44336", // Red
-        "#E91E63", // Pink
-        "#9C27B0", // Purple
-        "#673AB7", // Deep Purple
-        "#3F51B5", // Indigo
-        "#2196F3", // Blue
-        "#03A9F4", // Light Blue
-        "#00BCD4", // Cyan
-        "#009688", // Teal
-        "#4CAF50", // Green
-        "#8BC34A", // Light Green
-        "#CDDC39", // Lime
-        "#FFEB3B", // Yellow
-        "#FFC107", // Amber
-        "#FF9800", // Orange
-        "#795548", // Brown
-        "#607D8B"  // Blue Grey
+        "#FF5722", "#F44336", "#E91E63", "#9C27B0", "#673AB7", "#3F51B5",
+        "#2196F3", "#03A9F4", "#00BCD4", "#009688", "#4CAF50", "#8BC34A",
+        "#CDDC39", "#FFEB3B", "#FFC107", "#FF9800", "#795548", "#607D8B"
     )
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(if (contextToEdit == null) "New Context" else "Edit Context")
+            Text(if (projectToEdit == null) "New Project" else "Edit Project")
         },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Context Name") },
+                    label = { Text("Project Name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -211,6 +225,33 @@ fun ContextEditDialog(
                 Text("Select Color", style = MaterialTheme.typography.labelLarge)
                 Spacer(modifier = Modifier.height(8.dp))
                 
+                // Inherit Color option
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { selectedColor = null }
+                        .padding(vertical = 8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(
+                                color = Color(android.graphics.Color.parseColor(parentContextHex)),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (selectedColor == null) {
+                            Icon(Icons.Rounded.Block, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text("Inherit Context Color", style = MaterialTheme.typography.bodyMedium)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 // Color grid
                 Row(
                     modifier = Modifier.fillMaxWidth(),
