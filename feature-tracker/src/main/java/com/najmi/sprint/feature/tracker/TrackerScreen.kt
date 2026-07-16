@@ -288,7 +288,7 @@ fun SessionCard(
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = session.rawLabel,
+                    text = simplifyPackageName(session.rawLabel),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
@@ -388,7 +388,7 @@ fun SessionInspectorSheet(
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            session.rawLabel,
+            simplifyPackageName(session.rawLabel),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
@@ -561,4 +561,10 @@ fun SessionInspectorSheet(
             )
         }
     }
+}
+
+private fun simplifyPackageName(pkg: String?): String {
+    if (pkg == null) return "Unknown"
+    val parts = pkg.split(".")
+    return parts.lastOrNull()?.replaceFirstChar { it.uppercase() } ?: pkg
 }
