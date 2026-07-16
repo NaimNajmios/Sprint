@@ -1,7 +1,6 @@
 package com.najmi.sprint.core.sync.auth
 
 import android.content.Context
-import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,18 +21,20 @@ class AuthManager @Inject constructor(
     val userId: StateFlow<String?> = _userId.asStateFlow()
 
     fun saveSession(token: String, uid: String) {
-        prefs.edit(commit = true) {
+        prefs.edit().apply {
             putString("access_token", token)
             putString("user_id", uid)
+            apply()
         }
         _accessToken.value = token
         _userId.value = uid
     }
 
     fun clearSession() {
-        prefs.edit(commit = true) {
+        prefs.edit().apply {
             remove("access_token")
             remove("user_id")
+            apply()
         }
         _accessToken.value = null
         _userId.value = null

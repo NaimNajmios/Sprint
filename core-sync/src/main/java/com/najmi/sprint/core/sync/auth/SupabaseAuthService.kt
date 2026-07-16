@@ -14,11 +14,11 @@ import javax.inject.Singleton
 
 @Serializable
 data class AuthResponse(
-    val access_token: String,
-    val token_type: String,
-    val expires_in: Int,
-    val refresh_token: String,
-    val user: SupabaseUser
+    val access_token: String? = null,
+    val token_type: String? = null,
+    val expires_in: Int? = null,
+    val refresh_token: String? = null,
+    val user: SupabaseUser? = null
 )
 
 @Serializable
@@ -36,14 +36,19 @@ class SupabaseAuthService @Inject constructor(
 ) {
     suspend fun signUp(email: String, password: String): Result<Unit> {
         return try {
-            val response = client.authHttpClient.post("\${client.supabaseUrl}/auth/v1/signup") {
+            val response = client.authHttpClient.post("${client.supabaseUrl}/auth/v1/signup") {
                 contentType(ContentType.Application.Json)
                 setBody(mapOf("email" to email, "password" to password))
             }
             if (response.status.isSuccess()) {
                 val authData: AuthResponse = response.body()
-                authManager.saveSession(authData.access_token, authData.user.id)
-                Result.success(Unit)
+                if (authData.access_token != null && authData.user != null) {
+                    authManager.saveSession(authData.access_token, authData.user.id)
+                    Result.success(Unit)
+                } else {
+                    // This happens when Supabase "Confirm Email" is enabled
+                    Result.failure(Exception("Please check your email to verify your account before logging in."))
+                }
             } else {
                 Result.failure(Exception(response.bodyAsText()))
             }
@@ -54,14 +59,18 @@ class SupabaseAuthService @Inject constructor(
 
     suspend fun login(email: String, password: String): Result<Unit> {
         return try {
-            val response = client.authHttpClient.post("\${client.supabaseUrl}/auth/v1/token?grant_type=password") {
+            val response = client.authHttpClient.post("${client.supabaseUrl}/auth/v1/token?grant_type=password") {
                 contentType(ContentType.Application.Json)
                 setBody(mapOf("email" to email, "password" to password))
             }
             if (response.status.isSuccess()) {
                 val authData: AuthResponse = response.body()
-                authManager.saveSession(authData.access_token, authData.user.id)
-                Result.success(Unit)
+                if (authData.access_token != null && authData.user != null) {
+                    authManager.saveSession(authData.access_token, authData.user.id)
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception("Invalid login credentials"))
+                }
             } else {
                 Result.failure(Exception(response.bodyAsText()))
             }

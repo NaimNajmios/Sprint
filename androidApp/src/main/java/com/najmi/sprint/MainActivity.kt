@@ -16,15 +16,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.ui.theme.SprintTheme
+import com.najmi.sprint.core.sync.auth.AuthManager
 import com.najmi.sprint.tracking.TrackingService
-import com.najmi.sprint.ui.permissions.PermissionViewModel
-import com.najmi.sprint.ui.permissions.UsagePermissionScreen
+import com.najmi.sprint.ui.auth.LoginScreen
 import com.najmi.sprint.ui.main.MainScreen
 import com.najmi.sprint.ui.onboarding.OnboardingScreen
+import com.najmi.sprint.ui.permissions.PermissionViewModel
+import com.najmi.sprint.ui.permissions.UsagePermissionScreen
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var authManager: AuthManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -35,11 +42,14 @@ class MainActivity : ComponentActivity() {
                 
                 val sharedPrefs = getSharedPreferences("sprint_prefs", Context.MODE_PRIVATE)
                 var showOnboarding by mutableStateOf(sharedPrefs.getBoolean("show_onboarding", true))
+                var showAuth by mutableStateOf(!authManager.isLoggedIn())
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val modifier = Modifier.padding(innerPadding)
                     
-                    if (!hasPermission) {
+                    if (showAuth) {
+                        LoginScreen(onAuthSuccess = { showAuth = false })
+                    } else if (!hasPermission) {
                         UsagePermissionScreen(
                             onPermissionGranted = {
                                 startTrackingService()

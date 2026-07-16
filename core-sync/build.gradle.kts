@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.ktor.client.auth)
     
     implementation("javax.inject:javax.inject:1")
+    implementation(libs.hilt.android)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
