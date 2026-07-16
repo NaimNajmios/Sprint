@@ -80,7 +80,7 @@ class SessionClassifier @Inject constructor(
         val result = groqClient.generateCompletion(
             prompt = "Review the actor's classification.",
             systemPrompt = systemPrompt,
-            model = "llama3-70b-8192", // Use a smarter model for the critic
+            model = "llama-3.1-8b-instant", // Use a smarter model for the critic
             jsonMode = true
         )
         

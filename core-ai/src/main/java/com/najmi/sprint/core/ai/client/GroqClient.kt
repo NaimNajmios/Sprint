@@ -9,6 +9,8 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.isSuccess
 
 @Serializable
 data class GroqRequest(
@@ -46,7 +48,7 @@ class GroqClient(
     suspend fun generateCompletion(
         prompt: String,
         systemPrompt: String,
-        model: String = "llama3-8b-8192",
+        model: String = "llama-3.1-8b-instant",
         jsonMode: Boolean = false
     ): String {
         val request = GroqRequest(
@@ -59,9 +61,15 @@ class GroqClient(
         )
 
         val response = httpClient.post("https://api.groq.com/openai/v1/chat/completions") {
-            header(HttpHeaders.Authorization, "Bearer \$apiKey")
+            header(HttpHeaders.Authorization, "Bearer $apiKey")
             contentType(ContentType.Application.Json)
             setBody(request)
+        }
+
+        if (!response.status.isSuccess()) {
+            val errorText = response.bodyAsText()
+            android.util.Log.e("GroqClient", "API Error: ${response.status} - $errorText")
+            throw IllegalStateException("Groq API error: ${response.status.value}")
         }
 
         val body: GroqResponse = response.body()

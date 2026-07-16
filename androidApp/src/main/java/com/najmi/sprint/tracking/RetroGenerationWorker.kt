@@ -34,7 +34,7 @@ class RetroGenerationWorker @AssistedInject constructor(
     companion object {
         private const val TAG = "RetroGenerationWorker"
         private const val PROMPT_VERSION = "v1.0"
-        private const val MODEL = "llama3-70b-8192"
+        private const val MODEL = "llama-3.1-8b-instant"
     }
 
     override suspend fun doWork(): Result {

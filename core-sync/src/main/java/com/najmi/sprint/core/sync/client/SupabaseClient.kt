@@ -20,7 +20,8 @@ import javax.inject.Singleton
 @Singleton
 class SupabaseClient @Inject constructor() {
 
-    private val supabaseUrl = BuildConfig.SUPABASE_URL.trimEnd('/')
+    private val rawUrl = BuildConfig.SUPABASE_URL.trimEnd('/')
+    private val supabaseUrl = if (rawUrl.endsWith("/rest/v1")) rawUrl.removeSuffix("/rest/v1") else rawUrl
     private val supabaseKey = BuildConfig.SUPABASE_ANON_KEY
 
     val httpClient = HttpClient(OkHttp) {
