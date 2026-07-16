@@ -4,14 +4,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.najmi.sprint.core.domain.model.Context
 import com.najmi.sprint.core.domain.model.Session
+import com.najmi.sprint.core.domain.model.Project
 import com.najmi.sprint.core.domain.repository.ContextRepository
 import com.najmi.sprint.core.domain.repository.GlobalContextManager
+import com.najmi.sprint.core.domain.repository.ProjectRepository
 import com.najmi.sprint.core.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -29,6 +33,7 @@ data class DashboardState(
 class TrackerViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val contextRepository: ContextRepository,
+    private val projectRepository: ProjectRepository,
     private val globalContextManager: GlobalContextManager
 ) : ViewModel() {
 
@@ -67,4 +72,14 @@ class TrackerViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = DashboardState()
     )
+
+    fun updateSession(session: Session) {
+        viewModelScope.launch {
+            sessionRepository.updateSession(session.copy(isManuallyCorrected = true))
+        }
+    }
+
+    suspend fun getProjectsForContext(contextId: String): List<Project> {
+        return projectRepository.observeProjectsByContext(contextId).firstOrNull() ?: emptyList()
+    }
 }

@@ -24,16 +24,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.domain.model.Context
+import com.najmi.sprint.core.domain.model.Project
 import com.najmi.sprint.core.domain.model.Session
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrackerScreen(
     viewModel: TrackerViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    var selectedSession by remember { mutableStateOf<Session?>(null) }
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
 
     if (state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -85,9 +91,40 @@ fun TrackerScreen(
             ) {
                 items(state.todaySessions) { session ->
                     val context = state.contexts.find { it.id == session.contextId }
-                    SessionCard(session, context)
+                    SessionCard(
+                        session = session, 
+                        context = context,
+                        onClick = {
+                            selectedSession = session
+                            scope.launch { sheetState.show() }
+                        }
+                    )
                 }
             }
+        }
+    }
+
+    if (selectedSession != null) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                    if (!sheetState.isVisible) {
+                        selectedSession = null
+                    }
+                }
+            },
+            sheetState = sheetState
+        ) {
+            SessionInspectorSheet(
+                session = selectedSession!!,
+                availableContexts = state.contexts,
+                viewModel = viewModel,
+                onClose = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        selectedSession = null
+                    }
+                }
+            )
         }
     }
 }
@@ -185,14 +222,20 @@ fun TimeDistributionChart(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SessionCard(session: Session, context: Context?) {
+fun SessionCard(
+    session: Session, 
+    context: Context?,
+    onClick: () -> Unit = {}
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
+        ),
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier
@@ -263,3 +306,173 @@ private fun formatDuration(ms: Long): String {
     val m = (totalSecs % 3600) / 60
     return if (h > 0) "${h}h ${m}m" else "${m}m"
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SessionInspectorSheet(
+    session: Session,
+    availableContexts: List<Context>,
+    viewModel: TrackerViewModel,
+    onClose: () -> Unit
+) {
+    var selectedContextId by remember { mutableStateOf(session.contextId) }
+    var selectedProjectId by remember { mutableStateOf(session.projectId) }
+    var projectsForContext by remember { mutableStateOf<List<Project>>(emptyList()) }
+    var isContextDropdownExpanded by remember { mutableStateOf(false) }
+    var isProjectDropdownExpanded by remember { mutableStateOf(false) }
+
+    // Fetch projects whenever context changes
+    LaunchedEffect(selectedContextId) {
+        if (selectedContextId != null) {
+            projectsForContext = viewModel.getProjectsForContext(selectedContextId!!)
+            // If the old project doesn't belong to the new context, clear it
+            if (projectsForContext.none { it.id == selectedProjectId }) {
+                selectedProjectId = null
+            }
+        } else {
+            projectsForContext = emptyList()
+            selectedProjectId = null
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .padding(bottom = 32.dp)
+    ) {
+        Text(
+            text = "Session Details",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        // Raw Label
+        Text("App / Window Name", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(session.rawLabel, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+        
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Timestamps
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Column {
+                Text("Start Time", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(formatTime(session.startTime), style = MaterialTheme.typography.bodyLarge)
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text("End Time", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(session.endTime?.let { formatTime(it) } ?: "Active", style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // AI Confidence
+        val conf = session.classificationConfidence
+        if (conf != null) {
+            val confPercent = (conf * 100).toInt()
+            val confColor = when {
+                confPercent >= 85 -> Color(0xFF4CAF50)
+                confPercent >= 50 -> Color(0xFFFF9800)
+                else -> Color(0xFFF44336)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("AI Confidence: ", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("$confPercent%", style = MaterialTheme.typography.bodyMedium, color = confColor, fontWeight = FontWeight.Bold)
+                if (session.isManuallyCorrected) {
+                    Text(" (Manually Corrected)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // Context Dropdown
+        ExposedDropdownMenuBox(
+            expanded = isContextDropdownExpanded,
+            onExpandedChange = { isContextDropdownExpanded = it }
+        ) {
+            OutlinedTextField(
+                value = availableContexts.find { it.id == selectedContextId }?.name ?: "Unclassified",
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Context") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isContextDropdownExpanded) },
+                modifier = Modifier.fillMaxWidth().menuAnchor()
+            )
+            ExposedDropdownMenu(
+                expanded = isContextDropdownExpanded,
+                onDismissRequest = { isContextDropdownExpanded = false }
+            ) {
+                availableContexts.forEach { ctx ->
+                    DropdownMenuItem(
+                        text = { Text(ctx.name) },
+                        onClick = {
+                            selectedContextId = ctx.id
+                            isContextDropdownExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Project Dropdown
+        if (selectedContextId != null && projectsForContext.isNotEmpty()) {
+            ExposedDropdownMenuBox(
+                expanded = isProjectDropdownExpanded,
+                onExpandedChange = { isProjectDropdownExpanded = it }
+            ) {
+                OutlinedTextField(
+                    value = projectsForContext.find { it.id == selectedProjectId }?.name ?: "No Project",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Project (Optional)") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isProjectDropdownExpanded) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                )
+                ExposedDropdownMenu(
+                    expanded = isProjectDropdownExpanded,
+                    onDismissRequest = { isProjectDropdownExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("No Project") },
+                        onClick = {
+                            selectedProjectId = null
+                            isProjectDropdownExpanded = false
+                        }
+                    )
+                    projectsForContext.forEach { proj ->
+                        DropdownMenuItem(
+                            text = { Text(proj.name) },
+                            onClick = {
+                                selectedProjectId = proj.id
+                                isProjectDropdownExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+        } else {
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // Save Button
+        Button(
+            onClick = {
+                val updatedSession = session.copy(
+                    contextId = selectedContextId,
+                    projectId = selectedProjectId
+                )
+                viewModel.updateSession(updatedSession)
+                onClose()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Save Changes")
+        }
+    }
+}
+
