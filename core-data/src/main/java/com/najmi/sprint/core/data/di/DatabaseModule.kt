@@ -21,6 +21,8 @@ import com.najmi.sprint.core.domain.repository.ProjectRepository
 import com.najmi.sprint.core.domain.repository.RetroRepository
 import com.najmi.sprint.core.domain.repository.SessionRepository
 import com.najmi.sprint.core.domain.repository.TaskRepository
+import com.najmi.sprint.core.domain.repository.GlobalContextManager
+import com.najmi.sprint.core.data.repository.GlobalContextManagerImpl
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -134,4 +136,10 @@ abstract class RepositoryModule {
     abstract fun bindRuleRepository(
         impl: com.najmi.sprint.core.data.repository.RoomRuleRepository
     ): com.najmi.sprint.core.domain.repository.RuleRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGlobalContextManager(
+        impl: GlobalContextManagerImpl
+    ): GlobalContextManager
 }
