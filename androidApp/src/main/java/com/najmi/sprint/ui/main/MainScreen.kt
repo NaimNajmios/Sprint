@@ -33,6 +33,7 @@ import com.najmi.sprint.feature.kanban.KanbanScreen
 import com.najmi.sprint.feature.tracker.TrackerScreen
 import com.najmi.sprint.feature.retro.RetroScreen
 import com.najmi.sprint.ui.settings.SettingsScreen
+import com.najmi.sprint.ui.context.ContextManagerScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -167,7 +168,14 @@ fun MainScreen(
                 RetroScreen()
             }
             composable("settings") {
-                SettingsScreen()
+                SettingsScreen(
+                    onNavigateToContextManager = { navController.navigate("context_manager") }
+                )
+            }
+            composable("context_manager") {
+                ContextManagerScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
         }
     }

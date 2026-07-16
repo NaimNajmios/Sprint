@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sprint Kanban</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Noto+Serif:wght@400;500;600&amp;family=Public+Sans:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "on-error": "#ffffff",
+                "surface": "#faf9fa",
+                "secondary": "#5a5f63",
+                "on-primary-container": "#e7ebff",
+                "surface-dim": "#dbdadb",
+                "tertiary-container": "#bfab49",
+                "outline": "#737784",
+                "on-tertiary-container": "#4a3f00",
+                "on-tertiary-fixed": "#211b00",
+                "on-secondary-fixed": "#171c20",
+                "surface-container-lowest": "#ffffff",
+                "error": "#ba1a1a",
+                "on-tertiary-fixed-variant": "#524600",
+                "on-secondary": "#ffffff",
+                "inverse-primary": "#b1c5ff",
+                "tertiary": "#6d5e00",
+                "primary-fixed-dim": "#b1c5ff",
+                "on-primary": "#ffffff",
+                "on-background": "#1b1c1d",
+                "outline-variant": "#c3c6d5",
+                "inverse-surface": "#303031",
+                "on-primary-fixed-variant": "#00419d",
+                "secondary-fixed-dim": "#c2c7cc",
+                "surface-container": "#efedee",
+                "primary-fixed": "#d9e2ff",
+                "surface-bright": "#faf9fa",
+                "on-surface": "#1b1c1d",
+                "tertiary-fixed": "#f9e37a",
+                "on-secondary-container": "#606569",
+                "surface-container-low": "#f5f3f4",
+                "on-secondary-fixed-variant": "#42474b",
+                "error-container": "#ffdad6",
+                "surface-container-high": "#e9e8e9",
+                "on-error-container": "#93000a",
+                "on-tertiary": "#ffffff",
+                "tertiary-fixed-dim": "#dcc661",
+                "background": "#faf9fa",
+                "secondary-container": "#dfe3e8",
+                "surface-variant": "#e3e2e3",
+                "inverse-on-surface": "#f2f0f1",
+                "primary": "#094cb2",
+                "secondary-fixed": "#dfe3e8",
+                "on-primary-fixed": "#001946",
+                "surface-tint": "#2259bf",
+                "primary-container": "#3366cc",
+                "on-surface-variant": "#434653",
+                "surface-container-highest": "#e3e2e3"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "margin-desktop": "48px",
+                "xs": "8px",
+                "margin-mobile": "16px",
+                "md": "24px",
+                "base": "4px",
+                "gutter": "24px",
+                "lg": "40px",
+                "xl": "64px",
+                "sm": "16px"
+        },
+        "fontFamily": {
+                "headline": [
+                        "Noto Serif"
+                ],
+                "display": [
+                        "Noto Serif"
+                ],
+                "body": [
+                        "Inter"
+                ],
+                "label": [
+                        "Public Sans"
+                ]
+        },
+        "fontSize": {
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "1.5",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "1.0",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "1.3",
+                                "fontWeight": "500"
+                        }
+                ],
+                "display-lg-mobile": [
+                        "32px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "600"
+                        }
+                ],
+                "display-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "1.1",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "600"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        /* Hide scrollbar for clean horizontal scrolls */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body text-body-lg antialiased selection:bg-primary-container selection:text-on-primary-container overflow-hidden">
+<!-- TopAppBar -->
+<header class="bg-background text-primary font-display text-display-lg-mobile w-full top-0 sticky z-40 flex justify-between items-center px-margin-mobile py-base md:px-margin-desktop">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="person">person</span>
+</div>
+<span class="tracking-tight">Sprint</span>
+</div>
+<button class="text-primary hover:opacity-80 transition-opacity active:scale-95 transition-transform duration-200 w-10 h-10 flex items-center justify-center rounded-full">
+<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
+</button>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-h-0 relative">
+<!-- Context Tabs (Swipeable) -->
+<nav class="flex space-x-lg overflow-x-auto no-scrollbar px-margin-mobile md:px-margin-desktop py-sm border-b border-surface-container shrink-0">
+<button class="font-label text-label-sm text-primary border-b-2 border-primary pb-1 whitespace-nowrap active:scale-95 transition-transform">
+                Internship
+            </button>
+<button class="font-label text-label-sm text-on-surface-variant pb-1 border-b-2 border-transparent hover:text-primary transition-colors whitespace-nowrap active:scale-95 transition-transform">
+                Coursework
+            </button>
+<button class="font-label text-label-sm text-on-surface-variant pb-1 border-b-2 border-transparent hover:text-primary transition-colors whitespace-nowrap active:scale-95 transition-transform">
+                Personal
+            </button>
+<button class="font-label text-label-sm text-on-surface-variant pb-1 border-b-2 border-transparent hover:text-primary transition-colors whitespace-nowrap active:scale-95 transition-transform">
+                Errands
+            </button>
+</nav>
+<!-- Kanban Board Container -->
+<div class="flex-1 overflow-x-auto overflow-y-hidden no-scrollbar px-margin-mobile md:px-margin-desktop py-lg">
+<div class="flex gap-md md:gap-lg h-full pb-[100px] md:pb-0"> <!-- Padding bottom for mobile nav/fab -->
+<!-- Column: Backlog -->
+<div class="w-[85vw] md:w-80 flex-none flex flex-col bg-surface-container-low rounded-xl border border-outline-variant/30">
+<div class="p-sm flex justify-between items-center border-b border-surface-container">
+<h2 class="font-headline text-headline-md text-secondary">Backlog</h2>
+<span class="font-label text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">3</span>
+</div>
+<div class="flex-1 overflow-y-auto no-scrollbar p-xs flex flex-col gap-xs">
+<!-- Task Card 1 -->
+<div class="bg-surface rounded p-md flex flex-col gap-sm border border-outline-variant/50 hover:border-primary/50 transition-colors group cursor-grab shadow-sm">
+<div class="flex justify-between items-start">
+<p class="font-body text-body-md text-on-surface leading-tight">Research Q3 competitors for marketing deck</p>
+</div>
+<div class="flex justify-between items-end mt-auto pt-sm">
+<div class="flex gap-xs">
+<span class="bg-surface-variant/50 text-on-surface-variant font-label text-label-sm px-1.5 py-0.5 rounded text-[10px]">MKT</span>
+</div>
+<span class="bg-surface-variant text-on-surface-variant font-label text-label-sm px-2 py-0.5 rounded-full text-[12px]">5 pts</span>
+</div>
+</div>
+<!-- Task Card 2 -->
+<div class="bg-surface rounded p-md flex flex-col gap-sm border border-outline-variant/50 hover:border-primary/50 transition-colors group cursor-grab shadow-sm">
+<div class="flex justify-between items-start">
+<p class="font-body text-body-md text-on-surface leading-tight">Draft initial API documentation</p>
+</div>
+<div class="flex justify-between items-end mt-auto pt-sm">
+<div class="flex gap-xs">
+<span class="bg-surface-variant/50 text-on-surface-variant font-label text-label-sm px-1.5 py-0.5 rounded text-[10px]">DEV</span>
+</div>
+<span class="bg-surface-variant text-on-surface-variant font-label text-label-sm px-2 py-0.5 rounded-full text-[12px]">8 pts</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: In Progress -->
+<div class="w-[85vw] md:w-80 flex-none flex flex-col bg-surface-container-low rounded-xl border border-outline-variant/30 relative">
+<!-- Subtle Glow for Active Column -->
+<div class="absolute inset-0 bg-primary/5 rounded-xl pointer-events-none border border-primary/20"></div>
+<div class="p-sm flex justify-between items-center border-b border-surface-container relative z-10">
+<h2 class="font-headline text-headline-md text-primary flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                            In Progress
+                        </h2>
+<span class="font-label text-label-sm text-primary bg-primary/10 px-2 py-0.5 rounded">2</span>
+</div>
+<div class="flex-1 overflow-y-auto no-scrollbar p-xs flex flex-col gap-xs relative z-10">
+<!-- Task Card Active -->
+<div class="bg-surface rounded p-md flex flex-col gap-sm border border-primary/40 shadow-md cursor-grab">
+<div class="flex justify-between items-start">
+<p class="font-body text-body-md text-on-surface leading-tight">Implement responsive navigation shell</p>
+</div>
+<div class="flex justify-between items-end mt-auto pt-sm">
+<div class="flex gap-xs">
+<span class="bg-primary/10 text-primary font-label text-label-sm px-1.5 py-0.5 rounded text-[10px] border border-primary/20">UI/UX</span>
+</div>
+<span class="bg-surface-variant text-on-surface-variant font-label text-label-sm px-2 py-0.5 rounded-full text-[12px]">3 pts</span>
+</div>
+</div>
+<!-- Task Card Active 2 -->
+<div class="bg-surface rounded p-md flex flex-col gap-sm border border-outline-variant/50 hover:border-primary/50 transition-colors cursor-grab shadow-sm">
+<div class="flex justify-between items-start">
+<p class="font-body text-body-md text-on-surface leading-tight">User testing sessions setup</p>
+</div>
+<div class="flex justify-between items-end mt-auto pt-sm">
+<div class="flex gap-xs">
+<span class="bg-surface-variant/50 text-on-surface-variant font-label text-label-sm px-1.5 py-0.5 rounded text-[10px]">RSRCH</span>
+</div>
+<span class="bg-surface-variant text-on-surface-variant font-label text-label-sm px-2 py-0.5 rounded-full text-[12px]">2 pts</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Review -->
+<div class="w-[85vw] md:w-80 flex-none flex flex-col bg-surface-container-low rounded-xl border border-outline-variant/30">
+<div class="p-sm flex justify-between items-center border-b border-surface-container">
+<h2 class="font-headline text-headline-md text-secondary">Review</h2>
+<span class="font-label text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">1</span>
+</div>
+<div class="flex-1 overflow-y-auto no-scrollbar p-xs flex flex-col gap-xs">
+<!-- Task Card Review -->
+<div class="bg-surface rounded p-md flex flex-col gap-sm border border-outline-variant/50 hover:border-primary/50 cursor-grab shadow-sm">
+<div class="flex justify-between items-start">
+<p class="font-body text-body-md text-on-surface leading-tight">Update typography tokens in Figma</p>
+</div>
+<div class="flex justify-between items-end mt-auto pt-sm">
+<div class="flex gap-xs">
+<span class="bg-surface-variant/50 text-on-surface-variant font-label text-label-sm px-1.5 py-0.5 rounded text-[10px]">DS</span>
+</div>
+<span class="bg-surface-variant text-on-surface-variant font-label text-label-sm px-2 py-0.5 rounded-full text-[12px]">1 pt</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Done -->
+<div class="w-[85vw] md:w-80 flex-none flex flex-col bg-surface-container-lowest rounded-xl border border-outline-variant/20 opacity-70">
+<div class="p-sm flex justify-between items-center border-b border-surface-container/50">
+<h2 class="font-headline text-headline-md text-on-surface-variant">Done</h2>
+</div>
+<div class="flex-1 overflow-y-auto no-scrollbar p-xs flex flex-col gap-xs">
+<!-- Task Card Done -->
+<div class="bg-surface-container-low rounded p-md flex flex-col gap-sm cursor-default border border-transparent">
+<p class="font-body text-body-md leading-tight text-on-surface-variant line-through">Setup project repository</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button (FAB) -->
+<button class="fixed bottom-24 right-margin-mobile md:bottom-margin-desktop md:right-margin-desktop w-14 h-14 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-lg hover:scale-95 transition-transform duration-200 z-40">
+<span class="material-symbols-outlined text-[28px]" data-icon="add">add</span>
+</button>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-margin-mobile pb-safe pt-base bg-surface border-t border-outline-variant/30 rounded-t-xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]" style="padding-bottom: env(safe-area-inset-bottom, 16px);">
+<!-- Home (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors w-16 group">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" data-icon="home">home</span>
+<span class="font-label text-label-sm">Home</span>
+</button>
+<!-- Kanban (Active) -->
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-lg py-xs scale-95 transition-all duration-300 ease-out">
+<span class="material-symbols-outlined mb-1" data-icon="view_kanban" style="font-variation-settings: 'FILL' 1;">view_kanban</span>
+<span class="font-label text-label-sm">Kanban</span>
+</button>
+<!-- Retro (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors w-16 group">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" data-icon="analytics">analytics</span>
+<span class="font-label text-label-sm">Retro</span>
+</button>
+<!-- Settings (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors w-16 group">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" data-icon="settings">settings</span>
+<span class="font-label text-label-sm">Settings</span>
+</button>
+</nav>
+</body></html>
