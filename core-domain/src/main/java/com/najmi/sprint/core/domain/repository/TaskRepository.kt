@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
  * Repository interface for [Task] operations.
  */
 interface TaskRepository {
+    fun observeAllTasks(): Flow<List<Task>>
     fun observeTasksByContext(contextId: String): Flow<List<Task>>
     fun observeTasksByStatus(status: TaskStatus): Flow<List<Task>>
     suspend fun getTaskById(id: String): Task?

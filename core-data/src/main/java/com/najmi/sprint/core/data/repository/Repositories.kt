@@ -122,6 +122,9 @@ class RoomSessionRepository @Inject constructor(
 class RoomTaskRepository @Inject constructor(
     private val dao: TaskDao
 ) : TaskRepository {
+    override fun observeAllTasks(): Flow<List<Task>> =
+        dao.observeAllTasks().map { list -> list.map { it.toDomain() } }
+
     override fun observeTasksByContext(contextId: String): Flow<List<Task>> =
         dao.observeTasksByContext(contextId).map { list -> list.map { it.toDomain() } }
 

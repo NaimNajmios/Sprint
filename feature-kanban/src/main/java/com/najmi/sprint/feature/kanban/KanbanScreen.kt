@@ -1,11 +1,290 @@
 package com.najmi.sprint.feature.kanban
 
-/**
- * Kanban feature UI — to be implemented in Phase 4.
- *
- * Will contain:
- * - Per-context Kanban board (Backlog → In Progress → Review → Done)
- * - Drag-and-drop or tap-to-advance task cards
- * - Sprint burndown view
- */
-// TODO: Phase 4 — Implement Kanban board Compose UI
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.najmi.sprint.core.domain.model.Context
+import com.najmi.sprint.core.domain.model.Task
+import com.najmi.sprint.core.domain.model.TaskStatus
+
+@Composable
+fun KanbanScreen(
+    viewModel: KanbanViewModel = hiltViewModel()
+) {
+    val state by viewModel.state.collectAsState()
+    var showAddTaskDialog by remember { mutableStateOf(false) }
+
+    if (state.isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Task Board",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            
+            FloatingActionButton(
+                onClick = { showAddTaskDialog = true },
+                modifier = Modifier.size(48.dp),
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Task")
+            }
+        }
+
+        // Horizontal Board
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 8.dp)
+        ) {
+            TaskStatus.entries.forEach { status ->
+                KanbanColumn(
+                    status = status,
+                    tasks = state.tasksByStatus[status] ?: emptyList(),
+                    contexts = state.contexts,
+                    onMoveTask = { taskId, newStatus -> viewModel.moveTask(taskId, newStatus) },
+                    onDeleteTask = { viewModel.deleteTask(it) }
+                )
+            }
+        }
+    }
+
+    if (showAddTaskDialog) {
+        AddTaskDialog(
+            onDismiss = { showAddTaskDialog = false },
+            onAdd = { title ->
+                viewModel.addTask(title)
+                showAddTaskDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun KanbanColumn(
+    status: TaskStatus,
+    tasks: List<Task>,
+    contexts: List<Context>,
+    onMoveTask: (String, TaskStatus) -> Unit,
+    onDeleteTask: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .width(300.dp)
+            .fillMaxHeight()
+            .padding(8.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            .padding(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp, top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = status.name.replace("_", " "),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.defaultMinSize(minWidth = 24.dp)
+            ) {
+                Text(
+                    text = tasks.size.toString(),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(tasks) { task ->
+                val context = contexts.find { it.id == task.contextId }
+                TaskCard(
+                    task = task,
+                    context = context,
+                    onMoveTask = onMoveTask,
+                    onDeleteTask = onDeleteTask
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun TaskCard(
+    task: Task,
+    context: Context?,
+    onMoveTask: (String, TaskStatus) -> Unit,
+    onDeleteTask: (String) -> Unit
+) {
+    var expandedMenu by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                // Context Indicator
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = parseColor(context?.colorHex ?: "#888888").copy(alpha = 0.2f),
+                ) {
+                    Text(
+                        text = context?.name ?: "Global",
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = parseColor(context?.colorHex ?: "#888888"),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Box {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Options",
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable { expandedMenu = true },
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    DropdownMenu(
+                        expanded = expandedMenu,
+                        onDismissRequest = { expandedMenu = false }
+                    ) {
+                        TaskStatus.entries.forEach { status ->
+                            if (status != task.status) {
+                                DropdownMenuItem(
+                                    text = { Text("Move to ${status.name.replace("_", " ")}") },
+                                    onClick = {
+                                        onMoveTask(task.id, status)
+                                        expandedMenu = false
+                                    }
+                                )
+                            }
+                        }
+                        Divider()
+                        DropdownMenuItem(
+                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                            onClick = {
+                                onDeleteTask(task.id)
+                                expandedMenu = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = task.title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+fun AddTaskDialog(
+    onDismiss: () -> Unit,
+    onAdd: (String) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New Task") },
+        text = {
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Task Title") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (title.isNotBlank()) onAdd(title) },
+                enabled = title.isNotBlank()
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+private fun parseColor(hex: String): Color {
+    return try {
+        Color(android.graphics.Color.parseColor(hex))
+    } catch (e: Exception) {
+        Color.Gray
+    }
+}

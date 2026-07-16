@@ -19,7 +19,7 @@ import com.najmi.sprint.core.ui.theme.SprintTheme
 import com.najmi.sprint.tracking.TrackingService
 import com.najmi.sprint.ui.permissions.PermissionViewModel
 import com.najmi.sprint.ui.permissions.UsagePermissionScreen
-import com.najmi.sprint.ui.settings.SettingsScreen
+import com.najmi.sprint.ui.main.MainScreen
 import com.najmi.sprint.ui.onboarding.OnboardingScreen
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
                         startTrackingService()
                         OnboardingScreen(onComplete = { showOnboarding = false })
                     } else {
-                        SettingsScreen()
+                        MainScreen()
                     }
                 }
             }

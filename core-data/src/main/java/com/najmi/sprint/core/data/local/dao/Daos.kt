@@ -94,6 +94,9 @@ interface SessionDao {
 
 @Dao
 interface TaskDao {
+    @Query("SELECT * FROM tasks")
+    fun observeAllTasks(): Flow<List<TaskEntity>>
+
     @Query("SELECT * FROM tasks WHERE contextId = :contextId")
     fun observeTasksByContext(contextId: String): Flow<List<TaskEntity>>
 
