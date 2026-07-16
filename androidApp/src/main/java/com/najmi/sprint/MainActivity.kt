@@ -1,5 +1,6 @@
 package com.najmi.sprint
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,7 +12,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -32,7 +32,9 @@ class MainActivity : ComponentActivity() {
             SprintTheme {
                 val permissionViewModel: PermissionViewModel = hiltViewModel()
                 val hasPermission by permissionViewModel.hasUsagePermission.collectAsState()
-                var showOnboarding by rememberSaveable { mutableStateOf(true) }
+                
+                val sharedPrefs = getSharedPreferences("sprint_prefs", Context.MODE_PRIVATE)
+                var showOnboarding by mutableStateOf(sharedPrefs.getBoolean("show_onboarding", true))
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val modifier = Modifier.padding(innerPadding)
@@ -46,7 +48,10 @@ class MainActivity : ComponentActivity() {
                         )
                     } else if (showOnboarding) {
                         startTrackingService()
-                        OnboardingScreen(onComplete = { showOnboarding = false })
+                        OnboardingScreen(onComplete = { 
+                            sharedPrefs.edit().putBoolean("show_onboarding", false).apply()
+                            showOnboarding = false 
+                        })
                     } else {
                         MainScreen()
                     }
