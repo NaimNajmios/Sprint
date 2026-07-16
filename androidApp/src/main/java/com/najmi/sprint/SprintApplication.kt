@@ -13,6 +13,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.najmi.sprint.tracking.ClassificationWorker
+import com.najmi.sprint.tracking.RetroGenerationWorker
+import com.najmi.sprint.tracking.SyncWorker
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -32,37 +34,45 @@ class SprintApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        scheduleBackgroundClassification()
+        scheduleAllBackgroundWorkers()
     }
 
-    private fun scheduleBackgroundClassification() {
+    private fun scheduleAllBackgroundWorkers() {
         val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiredNetworkType(NetworkType.CONNECTED) // Wi-Fi or Mobile Data
             .setRequiresBatteryNotLow(true)
             .build()
 
-        // Run classification batch job every 6 hours
-        val periodicRequest = PeriodicWorkRequestBuilder<ClassificationWorker>(6, TimeUnit.HOURS)
-            .setConstraints(constraints)
-            .build()
-
-        // FOR TESTING: Run it immediately once so we can verify it works
-        val immediateRequest = OneTimeWorkRequestBuilder<ClassificationWorker>()
-            .setConstraints(constraints)
-            .build()
-
         val workManager = WorkManager.getInstance(this)
-        
+
+        // 1. Classification Worker (Every 6 hours)
+        val classificationRequest = PeriodicWorkRequestBuilder<ClassificationWorker>(6, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
         workManager.enqueueUniquePeriodicWork(
             "ClassificationWorkerPeriodic",
             ExistingPeriodicWorkPolicy.KEEP,
-            periodicRequest
+            classificationRequest
         )
 
-        workManager.enqueueUniqueWork(
-            "ClassificationWorkerImmediate",
-            ExistingWorkPolicy.REPLACE,
-            immediateRequest
+        // 2. Cloud Sync Worker (Every 4 hours)
+        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(4, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
+        workManager.enqueueUniquePeriodicWork(
+            "SyncWorkerPeriodic",
+            ExistingPeriodicWorkPolicy.KEEP,
+            syncRequest
+        )
+
+        // 3. Weekly Retro Worker (Every 24 hours - gracefully exits if already generated)
+        val retroRequest = PeriodicWorkRequestBuilder<RetroGenerationWorker>(24, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
+        workManager.enqueueUniquePeriodicWork(
+            "RetroWorkerPeriodic",
+            ExistingPeriodicWorkPolicy.KEEP,
+            retroRequest
         )
     }
 }
