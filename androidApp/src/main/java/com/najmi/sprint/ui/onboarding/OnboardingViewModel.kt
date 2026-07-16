@@ -57,8 +57,8 @@ class OnboardingViewModel @Inject constructor(
     }
     fun completeOnboarding(onFinished: () -> Unit) {
         viewModelScope.launch {
-            // Seed the app with the last 3 days of historical tracking data!
-            trackingEngine.backfillHistoricalData(days = 3)
+            // Seed the app with the last 3 days of MOCK historical tracking data for demonstration
+            trackingEngine.generateMockHistoricalData(days = 3)
             onFinished()
         }
     }

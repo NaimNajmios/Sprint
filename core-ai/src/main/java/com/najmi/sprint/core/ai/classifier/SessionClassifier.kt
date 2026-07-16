@@ -17,7 +17,7 @@ data class ActorClassificationResponse(
 data class CriticReviewResponse(
     val approved: Boolean,
     val finalContextId: String?,
-    val finalConfidence: Float
+    val finalConfidence: Float?
 )
 
 class SessionClassifier @Inject constructor(

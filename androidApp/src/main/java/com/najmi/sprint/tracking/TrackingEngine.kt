@@ -232,5 +232,58 @@ class TrackingEngine @Inject constructor(
             sessionRepository.insertSession(it)
         }
     }
+
+    /**
+     * MOCK DATA GENERATOR:
+     * Generates fake historical sessions for testing the UI without real UsageStats data.
+     */
+    suspend fun generateMockHistoricalData(days: Int = 3) {
+        val mockPackages = listOf(
+            "com.android.studio",
+            "com.google.chrome",
+            "com.slack.android",
+            "com.figma.app"
+        )
+        
+        val now = System.currentTimeMillis()
+        val newSessions = mutableListOf<Session>()
+
+        for (day in 0 until days) {
+            val baseTimeForDay = now - (day * 24 * 60 * 60 * 1000L)
+            
+            // Generate 3-5 random sessions per day
+            val sessionCount = (3..5).random()
+            
+            var currentStartTime = baseTimeForDay - (8 * 60 * 60 * 1000L) // Start around 8 hours ago on that day
+
+            for (i in 0 until sessionCount) {
+                val pkg = mockPackages.random()
+                // Random duration between 15 minutes and 2 hours
+                val durationMs = (15..120).random() * 60 * 1000L 
+                val endTime = currentStartTime + durationMs
+                
+                val rule = ruleRepository.getRuleForPackage(pkg)
+                
+                newSessions.add(
+                    Session(
+                        id = UUID.randomUUID().toString(),
+                        deviceId = deviceId,
+                        source = SessionSource.APP_USAGE,
+                        rawLabel = pkg,
+                        startTime = Instant.fromEpochMilliseconds(currentStartTime),
+                        endTime = Instant.fromEpochMilliseconds(endTime),
+                        contextId = rule?.contextId
+                    )
+                )
+                
+                // Gap before next session (5 to 30 mins)
+                currentStartTime = endTime + (5..30).random() * 60 * 1000L
+            }
+        }
+
+        newSessions.forEach {
+            sessionRepository.insertSession(it)
+        }
+    }
 }
 
