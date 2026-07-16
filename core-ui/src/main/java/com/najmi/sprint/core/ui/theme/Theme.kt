@@ -12,32 +12,56 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = AlexandriaDarkPrimary,
+    onPrimary = AlexandriaDarkOnPrimary,
+    primaryContainer = AlexandriaDarkPrimaryContainer,
+    secondary = AlexandriaDarkSecondary,
+    onSecondary = AlexandriaDarkOnSecondary,
+    secondaryContainer = AlexandriaDarkSecondaryContainer,
+    tertiary = AlexandriaDarkTertiary,
+    onTertiary = AlexandriaDarkOnTertiary,
+    tertiaryContainer = AlexandriaDarkTertiaryContainer,
+    background = AlexandriaDarkBackground,
+    onBackground = AlexandriaDarkOnBackground,
+    surface = AlexandriaDarkSurface,
+    onSurface = AlexandriaDarkOnSurface,
+    surfaceVariant = AlexandriaDarkSurfaceVariant,
+    onSurfaceVariant = AlexandriaDarkOnSurfaceVariant,
+    error = AlexandriaDarkError,
+    onError = AlexandriaDarkOnError,
+    errorContainer = AlexandriaDarkErrorContainer,
+    outline = AlexandriaDarkOutline,
+    outlineVariant = AlexandriaDarkOutlineVariant
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = AlexandriaPrimary,
+    onPrimary = AlexandriaOnPrimary,
+    primaryContainer = AlexandriaPrimaryContainer,
+    secondary = AlexandriaSecondary,
+    onSecondary = AlexandriaOnSecondary,
+    secondaryContainer = AlexandriaSecondaryContainer,
+    tertiary = AlexandriaTertiary,
+    onTertiary = AlexandriaOnTertiary,
+    tertiaryContainer = AlexandriaTertiaryContainer,
+    background = AlexandriaBackground,
+    onBackground = AlexandriaOnBackground,
+    surface = AlexandriaSurface,
+    onSurface = AlexandriaOnSurface,
+    surfaceVariant = AlexandriaSurfaceVariant,
+    onSurfaceVariant = AlexandriaOnSurfaceVariant,
+    error = AlexandriaError,
+    onError = AlexandriaOnError,
+    errorContainer = AlexandriaErrorContainer,
+    outline = AlexandriaOutline,
+    outlineVariant = AlexandriaOutlineVariant
 )
 
 @Composable
 fun SprintTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Enforce Alexandria theme over dynamic Material You colors by default
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -53,6 +77,7 @@ fun SprintTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = Shapes,
         content = content
     )
 }
