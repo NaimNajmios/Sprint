@@ -28,23 +28,63 @@ import android.content.ComponentName
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import com.najmi.sprint.core.domain.model.Task
+import com.najmi.sprint.core.domain.model.TaskStatus
+import com.najmi.sprint.core.domain.repository.SessionRepository
+import com.najmi.sprint.core.domain.repository.TaskRepository
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 class SprintWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = SprintWidget()
 }
 
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface WidgetEntryPoint {
+    fun taskRepository(): TaskRepository
+    fun sessionRepository(): SessionRepository
+}
+
 class SprintWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val entryPoint = EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            WidgetEntryPoint::class.java
+        )
+        
+        val taskRepository = entryPoint.taskRepository()
+        val sessionRepository = entryPoint.sessionRepository()
+
+        // Fetch Top Task
+        val topTask = taskRepository.observeTasksByStatus(TaskStatus.IN_PROGRESS)
+            .firstOrNull()?.firstOrNull() ?: taskRepository.observeTasksByStatus(TaskStatus.BACKLOG).firstOrNull()?.firstOrNull()
+            
+        // Fetch Today's Sessions to calculate time
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        val sessions = sessionRepository.observeSessionsForDate(today).firstOrNull() ?: emptyList()
+        val totalMillis = sessions.sumOf { (it.endTime?.toEpochMilliseconds() ?: Clock.System.now().toEpochMilliseconds()) - it.startTime.toEpochMilliseconds() }
+        val hours = totalMillis / (1000 * 60 * 60)
+        val minutes = (totalMillis / (1000 * 60)) % 60
+        
+        val timeString = if (hours > 0) "${hours}h ${minutes}m Logged" else "${minutes}m Logged"
+
         provideContent {
             GlanceTheme {
-                WidgetContent()
+                WidgetContent(timeString, topTask)
             }
         }
     }
 }
 
 @Composable
-fun WidgetContent() {
+fun WidgetContent(timeString: String, topTask: Task?) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -91,7 +131,7 @@ fun WidgetContent() {
         
         // We'll hydrate this with real Room data in the next step
         Text(
-            text = "3h 45m Logged",
+            text = timeString,
             style = TextStyle(
                 color = GlanceTheme.colors.onSurfaceVariant,
                 fontSize = 14.sp
@@ -109,27 +149,38 @@ fun WidgetContent() {
             )
         )
 
-        Column(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
-                .background(GlanceTheme.colors.secondaryContainer)
-                .padding(12.dp)
-        ) {
+        if (topTask != null) {
+            Column(
+                modifier = GlanceModifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .background(GlanceTheme.colors.secondaryContainer)
+                    .padding(12.dp)
+            ) {
+                Text(
+                    text = topTask.title,
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSecondaryContainer,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                )
+                Text(
+                    text = topTask.status.name.replace("_", " "),
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSecondaryContainer,
+                        fontSize = 12.sp
+                    )
+                )
+            }
+        } else {
             Text(
-                text = "Finish Phase 7 Code",
+                text = "No pending tasks!",
                 style = TextStyle(
-                    color = GlanceTheme.colors.onSecondaryContainer,
-                    fontWeight = FontWeight.Bold,
+                    color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 14.sp
-                )
-            )
-            Text(
-                text = "In Progress \u2022 Coursework",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSecondaryContainer,
-                    fontSize = 12.sp
-                )
+                ),
+                modifier = GlanceModifier.padding(top = 8.dp)
             )
         }
     }
