@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +31,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.najmi.sprint.feature.kanban.KanbanScreen
 import com.najmi.sprint.feature.tracker.TrackerScreen
+import com.najmi.sprint.feature.retro.RetroScreen
 import com.najmi.sprint.ui.settings.SettingsScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -123,6 +125,19 @@ fun MainScreen(
                 )
 
                 NavigationBarItem(
+                    icon = { Icon(Icons.Default.Assessment, contentDescription = "Retro") },
+                    label = { Text("Retro") },
+                    selected = currentDestination?.hierarchy?.any { it.route == "retro" } == true,
+                    onClick = {
+                        navController.navigate("retro") {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
+
+                NavigationBarItem(
                     icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
                     label = { Text("Settings") },
                     selected = currentDestination?.hierarchy?.any { it.route == "settings" } == true,
@@ -147,6 +162,9 @@ fun MainScreen(
             }
             composable("kanban") {
                 KanbanScreen()
+            }
+            composable("retro") {
+                RetroScreen()
             }
             composable("settings") {
                 SettingsScreen()

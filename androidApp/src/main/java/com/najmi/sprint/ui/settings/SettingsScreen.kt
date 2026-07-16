@@ -8,7 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Error
-import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.AutoFixHigh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -30,6 +30,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val lastTrackedTime by viewModel.lastTrackedSessionTime.collectAsState()
+    val classifyStatus by viewModel.classifyStatus.collectAsState()
     val context = LocalContext.current
     
     // Check if service is currently running
@@ -52,6 +53,23 @@ fun SettingsScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
+            // --- AI Classification Section ---
+            Text(
+                text = "AI Classification",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            ClassifyNowCard(
+                status = classifyStatus,
+                onClassifyNow = { viewModel.triggerClassifyNow() }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- Tracking Health Section ---
             Text(
                 text = "Tracking Health",
                 style = MaterialTheme.typography.titleMedium,
@@ -113,6 +131,70 @@ private fun HealthCard(title: String, subtitle: String, isHealthy: Boolean) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClassifyNowCard(
+    status: ClassifyStatus,
+    onClassifyNow: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.AutoFixHigh,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp)
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Classify Now",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = when (status) {
+                        ClassifyStatus.Idle -> "Tap to classify untagged sessions"
+                        ClassifyStatus.Running -> "AI is classifying…"
+                        ClassifyStatus.Success -> "Classification complete ✓"
+                        ClassifyStatus.Failed -> "Classification failed. Retry?"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Button(
+                onClick = onClassifyNow,
+                enabled = status != ClassifyStatus.Running
+            ) {
+                if (status == ClassifyStatus.Running) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Run")
+                }
             }
         }
     }
