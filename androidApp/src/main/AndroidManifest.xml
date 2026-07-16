@@ -55,6 +55,17 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".widget.SprintWidgetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/sprint_widget_info" />
+        </receiver>
+
         <!-- Disable default WorkManager initializer to use HiltWorkerFactory -->
         <provider
             android:name="androidx.startup.InitializationProvider"
