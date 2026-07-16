@@ -2,7 +2,6 @@ package com.najmi.sprint.feature.retro
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,19 +9,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material.icons.rounded.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.domain.model.Context
 
@@ -34,7 +31,7 @@ fun RetroScreen(
 
     if (state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         return
     }
@@ -43,14 +40,22 @@ fun RetroScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp),
+            .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
+        // Alexandria: Editorial hero with left border accent
         item {
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Weekly Retrospective",
+                text = "WEEKLY",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Retrospective",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground
             )
         }
@@ -63,15 +68,15 @@ fun RetroScreen(
             ) {
                 StatCard(
                     modifier = Modifier.weight(1f),
-                    icon = Icons.Rounded.TrendingUp,
-                    label = "Total Tracked",
+                    icon = Icons.AutoMirrored.Rounded.TrendingUp,
+                    label = "TOTAL TRACKED",
                     value = formatMinutes(state.weeklyTotalMinutes),
                     color = MaterialTheme.colorScheme.primary
                 )
                 StatCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Rounded.Star,
-                    label = "Top App",
+                    label = "TOP APP",
                     value = simplifyPackageName(state.topApp),
                     color = MaterialTheme.colorScheme.tertiary
                 )
@@ -83,7 +88,7 @@ fun RetroScreen(
             Text(
                 text = "Daily Activity",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onBackground
             )
         }
@@ -100,7 +105,7 @@ fun RetroScreen(
             Text(
                 text = "Context Breakdown",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onBackground
             )
         }
@@ -115,41 +120,51 @@ fun RetroScreen(
             )
         }
 
-        // --- Past AI Retros ---
+        // --- AI Insights ---
         if (state.retros.isNotEmpty()) {
             item {
                 Text(
                     text = "AI Insights",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
 
             items(state.retros) { retro ->
-                Card(
+                // Alexandria: Left accent border for editorial feel
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    )
+                    shape = RoundedCornerShape(2.dp),
+                    color = MaterialTheme.colorScheme.surface
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Week of ${retro.weekOf}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary
+                    Row {
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .fillMaxHeight()
+                                .background(MaterialTheme.colorScheme.primary)
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = retro.summaryText,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Week of ${retro.weekOf}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = retro.summaryText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontStyle = FontStyle.Italic
+                            )
+                        }
                     }
                 }
             }
         }
+
+        item { Spacer(modifier = Modifier.height(16.dp)) }
     }
 }
 
@@ -161,12 +176,11 @@ fun StatCard(
     value: String,
     color: Color
 ) {
-    Card(
+    // Alexandria: Surface tonal cards with no borders
+    Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = color.copy(alpha = 0.1f)
-        )
+        shape = RoundedCornerShape(12.dp),
+        color = color.copy(alpha = 0.08f)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -177,16 +191,17 @@ fun StatCard(
                 tint = color,
                 modifier = Modifier.size(24.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -209,12 +224,11 @@ fun WeeklyBarChart(
         label = "barAnim"
     )
 
-    Card(
+    // Alexandria: Surface card for chart
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        )
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
     ) {
         Row(
             modifier = Modifier
@@ -230,13 +244,11 @@ fun WeeklyBarChart(
                     verticalArrangement = Arrangement.Bottom,
                     modifier = Modifier.weight(1f)
                 ) {
-                    // Stacked bar
                     val barHeight = if (maxMinutes > 0) {
                         (day.totalMinutes.toFloat() / maxMinutes) * 140f * animProgress
                     } else 0f
 
                     if (day.perContext.isNotEmpty()) {
-                        // Draw stacked segments
                         day.perContext.entries.forEachIndexed { index, (contextId, minutes) ->
                             val ctx = contexts.find { it.id == contextId }
                             val segmentHeight = if (day.totalMinutes > 0) {
@@ -256,13 +268,12 @@ fun WeeklyBarChart(
                             )
                         }
                     } else {
-                        // Empty placeholder bar
                         Box(
                             modifier = Modifier
                                 .width(24.dp)
                                 .height(4.dp)
                                 .clip(RoundedCornerShape(2.dp))
-                                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
                         )
                     }
 
@@ -270,7 +281,7 @@ fun WeeklyBarChart(
 
                     Text(
                         text = day.dayLabel,
-                        fontSize = 11.sp,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -297,12 +308,11 @@ fun ContextBreakdownRow(
         label = "progressAnim"
     )
 
-    Card(
+    // Alexandria: Tonal surface, no border
+    Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        )
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -313,20 +323,21 @@ fun ContextBreakdownRow(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(12.dp)
+                            .size(10.dp)
                             .clip(CircleShape)
                             .background(parseColor(colorHex))
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = contextName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Text(
                     text = formatMinutes(minutes),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -336,10 +347,10 @@ fun ContextBreakdownRow(
                 progress = { animFraction },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
                 color = parseColor(colorHex),
-                trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f),
             )
         }
     }
@@ -361,7 +372,6 @@ private fun formatMinutes(minutes: Long): String {
 
 private fun simplifyPackageName(pkg: String?): String {
     if (pkg == null) return "N/A"
-    // "com.android.chrome" -> "Chrome"
     val parts = pkg.split(".")
     return parts.lastOrNull()?.replaceFirstChar { it.uppercase() } ?: pkg
 }

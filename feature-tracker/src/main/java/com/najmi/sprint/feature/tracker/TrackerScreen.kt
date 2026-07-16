@@ -14,14 +14,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.domain.model.Context
 import com.najmi.sprint.core.domain.model.Project
@@ -43,7 +41,7 @@ fun TrackerScreen(
 
     if (state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         return
     }
@@ -52,16 +50,56 @@ fun TrackerScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
+            .padding(horizontal = 16.dp)
     ) {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Alexandria: Editorial label + headline
         Text(
-            text = "Today's Dashboard",
+            text = "TODAY",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            letterSpacing = MaterialTheme.typography.labelMedium.letterSpacing
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Dashboard",
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onBackground
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
+
+        // Live Tracking Pill
+        if (state.todaySessions.any { it.endTime == null }) {
+            val activeSession = state.todaySessions.first { it.endTime == null }
+            val activeContext = state.contexts.find { it.id == activeSession.contextId }
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Tracking: ${activeContext?.name ?: "Unknown"}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+        }
 
         // Hero Chart
         TimeDistributionChart(
@@ -74,7 +112,7 @@ fun TrackerScreen(
         Text(
             text = "Timeline",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onBackground
         )
         
@@ -83,11 +121,12 @@ fun TrackerScreen(
         if (state.todaySessions.isEmpty()) {
             Text(
                 text = "No tracking data yet for today.",
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(state.todaySessions) { session ->
                     val context = state.contexts.find { it.id == session.contextId }
@@ -113,7 +152,8 @@ fun TrackerScreen(
                     }
                 }
             },
-            sheetState = sheetState
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surface
         ) {
             SessionInspectorSheet(
                 session = selectedSession!!,
@@ -134,9 +174,8 @@ fun TimeDistributionChart(
     timeSpentPerContext: Map<String, Long>,
     contexts: List<Context>
 ) {
-    val totalTime = timeSpentPerContext.values.sum().coerceAtLeast(1L) // prevent div by zero
+    val totalTime = timeSpentPerContext.values.sum().coerceAtLeast(1L)
     
-    // Animation state
     var animationPlayed by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { animationPlayed = true }
 
@@ -146,76 +185,70 @@ fun TimeDistributionChart(
         label = "sweepAngle"
     )
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(modifier = Modifier.size(200.dp), contentAlignment = Alignment.Center) {
-            Canvas(modifier = Modifier.size(200.dp)) {
-                var startAngle = -90f
-                for ((contextId, duration) in timeSpentPerContext) {
-                    val context = contexts.find { it.id == contextId }
-                    val color = parseColor(context?.colorHex ?: "#888888")
-                    val fraction = duration.toFloat() / totalTime
-                    val sweep = fraction * sweepAngle.value
-
-                    drawArc(
-                        color = color,
-                        startAngle = startAngle,
-                        sweepAngle = sweep,
-                        useCenter = false,
-                        style = Stroke(width = 40.dp.toPx(), cap = StrokeCap.Butt),
-                        size = Size(size.width, size.height)
-                    )
-                    startAngle += sweep
-                }
-                
-                // Draw a placeholder if no data
+    // Alexandria: Context bar (horizontal stacked bar) instead of donut
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // Stacked horizontal bar
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+            ) {
                 if (timeSpentPerContext.isEmpty()) {
-                    drawArc(
-                        color = Color.LightGray.copy(alpha = 0.3f),
-                        startAngle = -90f,
-                        sweepAngle = 360f,
-                        useCenter = false,
-                        style = Stroke(width = 40.dp.toPx(), cap = StrokeCap.Butt),
-                        size = Size(size.width, size.height)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
                     )
+                } else {
+                    timeSpentPerContext.forEach { (contextId, duration) ->
+                        val ctx = contexts.find { it.id == contextId }
+                        val fraction = duration.toFloat() / totalTime
+                        Box(
+                            modifier = Modifier
+                                .weight(fraction.coerceAtLeast(0.01f))
+                                .fillMaxHeight()
+                                .background(parseColor(ctx?.colorHex ?: "#888888"))
+                        )
+                    }
                 }
-            }
-            
-            // Center text
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = formatDuration(totalTime),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Total Logged",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
         
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // Legend
+        // Legend row
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            for ((contextId, _) in timeSpentPerContext) {
+            for ((contextId, duration) in timeSpentPerContext) {
                 val context = contexts.find { it.id == contextId } ?: continue
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(12.dp)
+                            .size(10.dp)
                             .clip(CircleShape)
                             .background(parseColor(context.colorHex))
                     )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = context.name,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = context.name, fontSize = 12.sp)
+                    Text(
+                        text = formatDuration(duration),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -229,12 +262,11 @@ fun SessionCard(
     context: Context?,
     onClick: () -> Unit = {}
 ) {
-    Card(
+    // Alexandria: No hard borders. Use tonal surface shifts.
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         onClick = onClick
     ) {
         Row(
@@ -257,12 +289,13 @@ fun SessionCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = session.rawLabel,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = context?.name ?: "Unclassified",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
@@ -270,8 +303,9 @@ fun SessionCard(
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = formatTime(session.startTime),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 val duration = session.endTime?.minus(session.startTime)?.inWholeMilliseconds ?: 0L
@@ -321,11 +355,9 @@ fun SessionInspectorSheet(
     var isContextDropdownExpanded by remember { mutableStateOf(false) }
     var isProjectDropdownExpanded by remember { mutableStateOf(false) }
 
-    // Fetch projects whenever context changes
     LaunchedEffect(selectedContextId) {
         if (selectedContextId != null) {
             projectsForContext = viewModel.getProjectsForContext(selectedContextId!!)
-            // If the old project doesn't belong to the new context, clear it
             if (projectsForContext.none { it.id == selectedProjectId }) {
                 selectedProjectId = null
             }
@@ -338,35 +370,63 @@ fun SessionInspectorSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(horizontal = 24.dp)
             .padding(bottom = 32.dp)
     ) {
         Text(
             text = "Session Details",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(bottom = 24.dp)
         )
 
         // Raw Label
-        Text("App / Window Name", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(session.rawLabel, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+        Text(
+            "APP / WINDOW",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            session.rawLabel,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Timestamps
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
-                Text("Start Time", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(formatTime(session.startTime), style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "START",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    formatTime(session.startTime),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("End Time", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(session.endTime?.let { formatTime(it) } ?: "Active", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "END",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    session.endTime?.let { formatTime(it) } ?: "Active",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (session.endTime == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
             }
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         // AI Confidence
         val conf = session.classificationConfidence
@@ -378,10 +438,25 @@ fun SessionInspectorSheet(
                 else -> Color(0xFFF44336)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("AI Confidence: ", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("$confPercent%", style = MaterialTheme.typography.bodyMedium, color = confColor, fontWeight = FontWeight.Bold)
+                Text(
+                    "AI CONFIDENCE",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "$confPercent%",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = confColor,
+                    fontWeight = FontWeight.Bold
+                )
                 if (session.isManuallyCorrected) {
-                    Text(" (Manually Corrected)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "(Manual)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
@@ -398,7 +473,8 @@ fun SessionInspectorSheet(
                 readOnly = true,
                 label = { Text("Context") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isContextDropdownExpanded) },
-                modifier = Modifier.fillMaxWidth().menuAnchor()
+                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                shape = RoundedCornerShape(12.dp)
             )
             ExposedDropdownMenu(
                 expanded = isContextDropdownExpanded,
@@ -406,7 +482,7 @@ fun SessionInspectorSheet(
             ) {
                 availableContexts.forEach { ctx ->
                     DropdownMenuItem(
-                        text = { Text(ctx.name) },
+                        text = { Text(ctx.name, style = MaterialTheme.typography.bodyMedium) },
                         onClick = {
                             selectedContextId = ctx.id
                             isContextDropdownExpanded = false
@@ -430,14 +506,15 @@ fun SessionInspectorSheet(
                     readOnly = true,
                     label = { Text("Project (Optional)") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isProjectDropdownExpanded) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    shape = RoundedCornerShape(12.dp)
                 )
                 ExposedDropdownMenu(
                     expanded = isProjectDropdownExpanded,
                     onDismissRequest = { isProjectDropdownExpanded = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("No Project") },
+                        text = { Text("No Project", style = MaterialTheme.typography.bodyMedium) },
                         onClick = {
                             selectedProjectId = null
                             isProjectDropdownExpanded = false
@@ -445,7 +522,7 @@ fun SessionInspectorSheet(
                     )
                     projectsForContext.forEach { proj ->
                         DropdownMenuItem(
-                            text = { Text(proj.name) },
+                            text = { Text(proj.name, style = MaterialTheme.typography.bodyMedium) },
                             onClick = {
                                 selectedProjectId = proj.id
                                 isProjectDropdownExpanded = false
@@ -459,7 +536,7 @@ fun SessionInspectorSheet(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // Save Button
+        // Save Button — Alexandria: gradient-like primary fill
         Button(
             onClick = {
                 val updatedSession = session.copy(
@@ -469,10 +546,19 @@ fun SessionInspectorSheet(
                 viewModel.updateSession(updatedSession)
                 onClose()
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
         ) {
-            Text("Save Changes")
+            Text(
+                "Save Changes",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
-

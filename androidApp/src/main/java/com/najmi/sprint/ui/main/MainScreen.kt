@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material3.*
@@ -48,25 +48,44 @@ fun MainScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Sprint", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        "Sprint",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                },
                 actions = {
                     Box {
                         TextButton(onClick = { dropdownExpanded = true }) {
                             val selectedName = state.contexts.find { it.id == state.selectedContextId }?.name ?: "Global"
-                            Text(selectedName, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                            Text(
+                                selectedName,
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.labelMedium
+                            )
                         }
                         DropdownMenu(
                             expanded = dropdownExpanded,
                             onDismissRequest = { dropdownExpanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Global (All Contexts)", fontWeight = FontWeight.Bold) },
+                                text = {
+                                    Text(
+                                        "Global (All Contexts)",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                },
                                 onClick = {
                                     viewModel.selectContext(null)
                                     dropdownExpanded = false
                                 }
                             )
-                            Divider()
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
+                            )
                             state.contexts.forEach { ctx ->
                                 DropdownMenuItem(
                                     text = {
@@ -78,7 +97,7 @@ fun MainScreen(
                                                     .background(parseColor(ctx.colorHex))
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text(ctx.name)
+                                            Text(ctx.name, style = MaterialTheme.typography.bodyMedium)
                                         }
                                     },
                                     onClick = {
@@ -96,13 +115,16 @@ fun MainScreen(
             )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            ) {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
 
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.DateRange, contentDescription = "Dashboard") },
-                    label = { Text("Dashboard") },
+                    label = { Text("Home", style = MaterialTheme.typography.labelSmall) },
                     selected = currentDestination?.hierarchy?.any { it.route == "dashboard" } == true,
                     onClick = {
                         navController.navigate("dashboard") {
@@ -110,12 +132,19 @@ fun MainScreen(
                             launchSingleTop = true
                             restoreState = true
                         }
-                    }
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    )
                 )
                 
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.List, contentDescription = "Kanban") },
-                    label = { Text("Kanban") },
+                    icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Kanban") },
+                    label = { Text("Kanban", style = MaterialTheme.typography.labelSmall) },
                     selected = currentDestination?.hierarchy?.any { it.route == "kanban" } == true,
                     onClick = {
                         navController.navigate("kanban") {
@@ -123,12 +152,19 @@ fun MainScreen(
                             launchSingleTop = true
                             restoreState = true
                         }
-                    }
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    )
                 )
 
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.Assessment, contentDescription = "Retro") },
-                    label = { Text("Retro") },
+                    label = { Text("Retro", style = MaterialTheme.typography.labelSmall) },
                     selected = currentDestination?.hierarchy?.any { it.route == "retro" } == true,
                     onClick = {
                         navController.navigate("retro") {
@@ -136,12 +172,19 @@ fun MainScreen(
                             launchSingleTop = true
                             restoreState = true
                         }
-                    }
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    )
                 )
 
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-                    label = { Text("Settings") },
+                    label = { Text("Settings", style = MaterialTheme.typography.labelSmall) },
                     selected = currentDestination?.hierarchy?.any { it.route == "settings" } == true,
                     onClick = {
                         navController.navigate("settings") {
@@ -149,7 +192,14 @@ fun MainScreen(
                             launchSingleTop = true
                             restoreState = true
                         }
-                    }
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    )
                 )
             }
         }

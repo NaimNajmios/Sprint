@@ -34,7 +34,7 @@ fun KanbanScreen(
 
     if (state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         return
     }
@@ -44,26 +44,34 @@ fun KanbanScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Header
+        // Alexandria: Editorial header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Task Board",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+            Column {
+                Text(
+                    text = "TASK BOARD",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Kanban",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
             
             FloatingActionButton(
                 onClick = { showAddTaskDialog = true },
                 modifier = Modifier.size(48.dp),
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(14.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Task")
             }
@@ -107,15 +115,22 @@ fun KanbanColumn(
     onMoveTask: (String, TaskStatus) -> Unit,
     onDeleteTask: (String) -> Unit
 ) {
+    // Alexandria: Tonal surface shifts per column, no hard borders
+    val isActive = status == TaskStatus.IN_PROGRESS
+    
     Column(
         modifier = Modifier
             .width(300.dp)
             .fillMaxHeight()
             .padding(8.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            .background(
+                if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
+                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+            )
             .padding(8.dp)
     ) {
+        // Column header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -123,22 +138,37 @@ fun KanbanColumn(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = status.name.replace("_", " "),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isActive) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(
+                    text = status.name.replace("_", " "),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = if (isActive) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = RoundedCornerShape(8.dp),
+                color = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.defaultMinSize(minWidth = 24.dp)
             ) {
                 Text(
                     text = tasks.size.toString(),
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isActive) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
@@ -169,10 +199,12 @@ fun TaskCard(
 ) {
     var expandedMenu by remember { mutableStateOf(false) }
 
-    Card(
+    // Alexandria: Surface cards, ghost borders via outline_variant at 15%
+    Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp
     ) {
         Column(
             modifier = Modifier
@@ -184,17 +216,17 @@ fun TaskCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                // Context Indicator
+                // Context tag
                 Surface(
                     shape = RoundedCornerShape(4.dp),
-                    color = parseColor(context?.colorHex ?: "#888888").copy(alpha = 0.2f),
+                    color = parseColor(context?.colorHex ?: "#888888").copy(alpha = 0.12f),
                 ) {
                     Text(
                         text = context?.name ?: "Global",
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         style = MaterialTheme.typography.labelSmall,
                         color = parseColor(context?.colorHex ?: "#888888"),
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
 
@@ -215,7 +247,12 @@ fun TaskCard(
                         TaskStatus.entries.forEach { status ->
                             if (status != task.status) {
                                 DropdownMenuItem(
-                                    text = { Text("Move to ${status.name.replace("_", " ")}") },
+                                    text = {
+                                        Text(
+                                            "Move to ${status.name.replace("_", " ")}",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    },
                                     onClick = {
                                         onMoveTask(task.id, status)
                                         expandedMenu = false
@@ -223,9 +260,17 @@ fun TaskCard(
                                 )
                             }
                         }
-                        Divider()
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
+                        )
                         DropdownMenuItem(
-                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                            text = {
+                                Text(
+                                    "Delete",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            },
                             onClick = {
                                 onDeleteTask(task.id)
                                 expandedMenu = false
@@ -239,7 +284,7 @@ fun TaskCard(
 
             Text(
                 text = task.title,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -255,29 +300,38 @@ fun AddTaskDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New Task") },
+        title = {
+            Text(
+                "New Task",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
         text = {
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("Task Title") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
             )
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = { if (title.isNotBlank()) onAdd(title) },
-                enabled = title.isNotBlank()
+                enabled = title.isNotBlank(),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Add")
+                Text("Add", style = MaterialTheme.typography.labelMedium)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancel", style = MaterialTheme.typography.labelMedium)
             }
-        }
+        },
+        shape = RoundedCornerShape(16.dp)
     )
 }
 
