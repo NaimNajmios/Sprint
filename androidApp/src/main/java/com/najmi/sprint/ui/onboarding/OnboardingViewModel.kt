@@ -6,6 +6,7 @@ import com.najmi.sprint.core.domain.model.ClassificationRule
 import com.najmi.sprint.core.domain.model.Context
 import com.najmi.sprint.core.domain.repository.ContextRepository
 import com.najmi.sprint.core.domain.repository.RuleRepository
+import com.najmi.sprint.tracking.TrackingEngine
 import com.najmi.sprint.tracking.UsageStatsTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,8 @@ import javax.inject.Inject
 class OnboardingViewModel @Inject constructor(
     private val usageStatsTracker: UsageStatsTracker,
     private val contextRepository: ContextRepository,
-    private val ruleRepository: RuleRepository
+    private val ruleRepository: RuleRepository,
+    private val trackingEngine: TrackingEngine
 ) : ViewModel() {
 
     private val _topApps = MutableStateFlow<List<String>>(emptyList())
@@ -51,6 +53,13 @@ class OnboardingViewModel @Inject constructor(
             
             // Remove from the list so the user sees progress
             _topApps.value = _topApps.value.filter { it != packageName }
+        }
+    }
+    fun completeOnboarding(onFinished: () -> Unit) {
+        viewModelScope.launch {
+            // Seed the app with the last 3 days of historical tracking data!
+            trackingEngine.backfillHistoricalData(days = 3)
+            onFinished()
         }
     }
 }

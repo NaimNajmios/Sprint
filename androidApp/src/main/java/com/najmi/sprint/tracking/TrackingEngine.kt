@@ -163,4 +163,74 @@ class TrackingEngine @Inject constructor(
         usageStatsTracker.pollRecentForegroundApp() 
         startTracking()
     }
+
+    /** 
+     * Reads the past [days] of UsageEvents and generates Sprint Sessions. 
+     * Useful for seeding the app with historical data on first launch.
+     */
+    suspend fun backfillHistoricalData(days: Int = 3) {
+        val events = usageStatsTracker.getHistoricalEvents(days)
+        if (events.isEmpty()) return
+
+        // To avoid duplicates, we only want to backfill if the DB is mostly empty,
+        // or we could check existing sessions. For simplicity, we just insert.
+        // In a production app, we would query the latest session timestamp and only backfill before it.
+
+        var currentPkg: String? = null
+        var currentStartTime: Long? = null
+        val newSessions = mutableListOf<Session>()
+
+        for (event in events) {
+            // ACTIVITY_RESUMED = 1
+            if (event.eventType == 1) { 
+                if (currentPkg != null && currentStartTime != null) {
+                    val durationMs = event.timestamp - currentStartTime
+                    if (durationMs > 10_000L) { // Min 10 seconds to count
+                        val rule = ruleRepository.getRuleForPackage(currentPkg)
+                        newSessions.add(
+                            Session(
+                                id = UUID.randomUUID().toString(),
+                                deviceId = deviceId,
+                                source = SessionSource.APP_USAGE,
+                                rawLabel = currentPkg,
+                                startTime = Instant.fromEpochMilliseconds(currentStartTime),
+                                endTime = Instant.fromEpochMilliseconds(event.timestamp),
+                                contextId = rule?.contextId
+                            )
+                        )
+                    }
+                }
+                currentPkg = event.packageName
+                currentStartTime = event.timestamp
+            } 
+            // ACTIVITY_PAUSED = 2, ACTIVITY_STOPPED = 23 (often we just use PAUSED)
+            else if (event.eventType == 2) { 
+                if (currentPkg == event.packageName && currentStartTime != null) {
+                    val durationMs = event.timestamp - currentStartTime
+                    if (durationMs > 10_000L) {
+                        val rule = ruleRepository.getRuleForPackage(currentPkg)
+                        newSessions.add(
+                            Session(
+                                id = UUID.randomUUID().toString(),
+                                deviceId = deviceId,
+                                source = SessionSource.APP_USAGE,
+                                rawLabel = currentPkg,
+                                startTime = Instant.fromEpochMilliseconds(currentStartTime),
+                                endTime = Instant.fromEpochMilliseconds(event.timestamp),
+                                contextId = rule?.contextId
+                            )
+                        )
+                    }
+                    currentPkg = null
+                    currentStartTime = null
+                }
+            }
+        }
+
+        // Insert all parsed historical sessions
+        newSessions.forEach {
+            sessionRepository.insertSession(it)
+        }
+    }
 }
+

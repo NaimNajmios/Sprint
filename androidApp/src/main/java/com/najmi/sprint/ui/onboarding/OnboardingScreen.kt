@@ -59,7 +59,7 @@ fun OnboardingScreen(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
-                    onClick = onComplete,
+                    onClick = { viewModel.completeOnboarding(onComplete) },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {

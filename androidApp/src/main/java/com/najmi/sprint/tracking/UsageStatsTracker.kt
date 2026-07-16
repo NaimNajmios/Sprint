@@ -47,6 +47,39 @@ class UsageStatsTracker @Inject constructor(
         val timestamp: Long
     )
 
+    data class HistoricalEvent(
+        val packageName: String,
+        val timestamp: Long,
+        val eventType: Int
+    )
+
+    /**
+     * Gets all resumed/paused events over the last [days] days for backfilling.
+     */
+    fun getHistoricalEvents(days: Int = 1): List<HistoricalEvent> {
+        val now = Clock.System.now().toEpochMilliseconds()
+        val start = now - (days * 24 * 60 * 60 * 1000L)
+        val events = usageStatsManager.queryEvents(start, now)
+        
+        val result = mutableListOf<HistoricalEvent>()
+        val event = UsageEvents.Event()
+        
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED || 
+                event.eventType == UsageEvents.Event.ACTIVITY_PAUSED) {
+                result.add(
+                    HistoricalEvent(
+                        packageName = event.packageName,
+                        timestamp = event.timeStamp,
+                        eventType = event.eventType
+                    )
+                )
+            }
+        }
+        return result
+    }
+
     /**
      * Gets the top most used applications over the last [days] days.
      * Used for the Phase 3a Onboarding Screen to seed classification rules.
