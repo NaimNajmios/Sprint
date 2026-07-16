@@ -5,6 +5,7 @@ import com.najmi.sprint.core.domain.model.Context
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import android.util.Log
 
 @Serializable
 data class ActorClassificationResponse(
@@ -23,6 +24,11 @@ class SessionClassifier @Inject constructor(
     private val groqClient: GroqClient,
     private val json: Json
 ) {
+    private val TAG = "SessionClassifier"
+    
+    private fun extractJson(raw: String): String {
+        return raw.substringAfter("```json").substringAfter("```").substringBeforeLast("```").trim()
+    }
     /**
      * The Actor is responsible for taking a raw app package and predicting the correct context.
      */
@@ -48,10 +54,12 @@ class SessionClassifier @Inject constructor(
             systemPrompt = systemPrompt,
             jsonMode = true
         )
+        Log.d(TAG, "Actor Output for $packageName: $result")
         
         return try {
-            json.decodeFromString<ActorClassificationResponse>(result)
+            json.decodeFromString<ActorClassificationResponse>(extractJson(result))
         } catch (e: Exception) {
+            Log.e(TAG, "Actor failed to parse JSON for $packageName", e)
             null
         }
     }
@@ -83,10 +91,12 @@ class SessionClassifier @Inject constructor(
             model = "llama-3.1-8b-instant", // Use a smarter model for the critic
             jsonMode = true
         )
+        Log.d(TAG, "Critic Output for $packageName: $result")
         
         return try {
-            json.decodeFromString<CriticReviewResponse>(result)
+            json.decodeFromString<CriticReviewResponse>(extractJson(result))
         } catch (e: Exception) {
+            Log.e(TAG, "Critic failed to parse JSON for $packageName", e)
             null
         }
     }
