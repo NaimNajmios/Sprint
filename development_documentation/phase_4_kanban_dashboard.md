@@ -1,26 +1,52 @@
-# Phase 4: Kanban Dashboard & Visualization
+# Phase 4: Visualization and Task Management (Kanban Dashboard)
 
-## 1. Objective
-Transform the raw, categorized session and task data into a rich, visual user experience. Provide a global context filter, chronological daily tracking, time aggregation charts, and a Kanban board for task management.
+## 1. Phase Objective
+The objective of Phase 4 was to transition the Sprint app from a headless background tracking service into a highly visual, interactive productivity suite. This phase brought the data captured in Phase 3 (AI-Classified Sessions) to life by implementing a daily timeline, aggregated charts, a drag-and-drop task management board, and global context filtering.
 
-## 2. Architecture & Design
+## 2. Core Components Built
 
-### 2.1 Global Context State
-*   Implement a `GlobalContextManager` to hold a singleton `StateFlow<String?>` representing the currently selected `Context` (e.g., "Work", "Life", or `null` for Global).
-*   Inject this manager into all UI ViewModels (`TrackerViewModel`, `KanbanViewModel`) so that selecting a context at the top of the app filters both screens simultaneously.
+### 2.1 Global State Management (`GlobalContextManager`)
+To ensure a cohesive user experience, the application requires a "Global Filter". If a user selects "Work" at the top level of the app, every screen below it (Dashboard, Kanban, etc.) must reactively filter out non-work data.
+*   **Interface (`core-domain`)**: Created `GlobalContextManager` to expose a `StateFlow<String?>` representing the active `ContextId`.
+*   **Implementation (`core-data`)**: Created `GlobalContextManagerImpl` containing a `MutableStateFlow`.
+*   **Dependency Injection**: Bound as a `@Singleton` in `DatabaseModule.kt` so that all ViewModels share the exact same instance in memory.
 
-### 2.2 Dashboard UI (TrackerScreen)
-*   **Hero Visuals**: Use Jetpack Compose canvas and animations to render lively visual elements (e.g., Animated Pie Chart or rounded Progress Bars) showing today's time distribution.
-*   **Timeline**: A scrollable vertical list showing today's app usage sessions chronologically. 
-*   **State**: Fetches all `Session` entities for `LocalDate.now()` and maps them.
+### 2.2 The Main Navigation Scaffold (`MainScreen`)
+Replaced the flat UI in `MainActivity` with a proper Jetpack Compose `NavHost` architecture.
+*   **Top App Bar**: A persistent header across the app containing the Global Context Dropdown. Powered by `MainViewModel`, it queries `ContextRepository` for available contexts (Work, Life, etc.) and updates the `GlobalContextManager` upon selection.
+*   **Bottom Navigation Bar**: Utilized `navigation-compose` to switch between `TrackerScreen` (Dashboard), `KanbanScreen`, and `SettingsScreen`. State is saved and restored automatically when switching tabs.
 
-### 2.3 Kanban UI (KanbanScreen)
-*   **Board**: A horizontally scrollable row of columns (`Backlog`, `In Progress`, `Review`, `Done`).
-*   **Cards**: Task cards that support visual grouping by context.
-*   **Interactions**: Click-to-move (or drag-and-drop if viable in Compose) to transition tasks between statuses.
-*   **State**: Fetches all `Task` entities and groups them by `TaskStatus`.
+### 2.3 The Dashboard (`TrackerScreen` & `TrackerViewModel`)
+Visualizes the user's daily activity by pulling data tracked by `TrackingEngine` and categorized by `ClassificationWorker`.
+*   **Data Aggregation**: `TrackerViewModel` uses `combine()` to simultaneously observe `sessionsForDate`, `activeContexts`, and `selectedContextId`. It dynamically calculates a `timeSpentPerContext` map (summing the durations of sessions per context).
+*   **Hero Chart**: Implemented a custom Jetpack Compose `Canvas` to draw an animated Pie Chart/Donut Chart. It reads the hex colors assigned to each Context in the database and renders proportional sweep angles.
+*   **Timeline**: A `LazyColumn` of `SessionCard` components. Displays the raw package name, the AI-resolved Context, start time, and total session duration.
 
-### 2.4 Navigation
-*   Implement a standard Bottom Navigation Bar in `MainActivity` using `navigation-compose`.
-*   Routes: `Tracker`, `Kanban`, `Retro`, `Settings`.
-*   A persistent Top App Bar with a dropdown menu to select the Global Context.
+### 2.4 The Task Board (`KanbanScreen` & `KanbanViewModel`)
+A complete task management system tied directly into the user's Contexts.
+*   **Data Flow**: Added `observeAllTasks()` to `TaskDao` and `RoomTaskRepository`.
+*   **State Management**: `KanbanViewModel` fetches all tasks, filters them by the `GlobalContextManager` state, and groups them by `TaskStatus` (`BACKLOG`, `IN_PROGRESS`, `REVIEW`, `DONE`).
+*   **UI Layout**: A `LazyRow` of fixed-width columns. Each column contains a `LazyColumn` of `TaskCard` elements.
+*   **Interactions**: Users can add tasks (which auto-assign to the currently selected Global Context) and move them between statuses via a dropdown menu. Repository methods instantly commit these changes to SQLite, and the UI reacts immediately via Room's Flow observation.
+
+## 3. Data Flow Architecture
+
+The reactive nature of Phase 4 relies entirely on Kotlin `Flow` and the Clean Architecture boundaries established in Phase 0.
+
+1.  **Database Level**: Room `Dao` returns `Flow<List<Entity>>`. Any insert/update (like the TrackingEngine closing a session, or the user moving a Kanban task) triggers a re-emission.
+2.  **Repository Level**: `RoomSessionRepository` maps the Entity Flow to a Domain Model Flow.
+3.  **ViewModel Level**: `combine` merges the Database Flow with the `GlobalContextManager` Flow.
+4.  **UI Level**: `collectAsState()` triggers Compose Recomposition, instantly redrawing the Pie Chart or Kanban columns without any manual refresh logic.
+
+## 4. Testing & Verification
+
+*   **Manual Verification**: Visual validation of the Dashboard chart animations and Kanban column sorting. Verified that background sessions generated by app switching automatically populate the timeline.
+*   **Automated Testing**: Created `KanbanViewModelTest` utilizing `kotlinx-coroutines-test` and `Turbine`. Validates:
+    *   Initial state loading.
+    *   Correct grouping of tasks by status.
+    *   Correct filtering of tasks when `GlobalContextManager` emits a new context.
+    *   Mock repository verification for `addTask` and `moveTask`.
+
+## 5. Next Steps / Phase 5 Additions
+*   **Manual Classification Trigger**: Add a UI button to manually trigger the `ClassificationWorker` rather than waiting for the 6-hour interval.
+*   **Time Blocking Integration**: Connect the Kanban Tasks to the Timeline, allowing users to schedule blocks of time to specific tasks.
