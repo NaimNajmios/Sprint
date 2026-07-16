@@ -14,12 +14,17 @@ import kotlinx.datetime.Instant
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import android.content.Context
+import androidx.glance.appwidget.updateAll
+import com.najmi.sprint.widget.SprintWidget
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 @Singleton
 class TrackingEngine @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val ruleRepository: RuleRepository,
-    private val usageStatsTracker: UsageStatsTracker
+    private val usageStatsTracker: UsageStatsTracker,
+    @ApplicationContext private val context: Context
 ) {
     private var trackingJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.IO)
@@ -137,6 +142,9 @@ class TrackingEngine @Inject constructor(
         }
         activeSessionId = null
         currentPackage = null
+        
+        // Phase 7 Polish: Instantly update the home screen widget with new logged time
+        SprintWidget().updateAll(context)
     }
 
     /** Called by BroadcastReceiver when screen turns off */

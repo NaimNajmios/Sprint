@@ -23,7 +23,11 @@ import com.najmi.sprint.ui.main.MainScreen
 import com.najmi.sprint.ui.onboarding.OnboardingScreen
 import com.najmi.sprint.ui.permissions.PermissionViewModel
 import com.najmi.sprint.ui.permissions.UsagePermissionScreen
+import com.najmi.sprint.widget.SprintWidget
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import androidx.lifecycle.lifecycleScope
+import androidx.glance.appwidget.updateAll
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -76,6 +80,14 @@ class MainActivity : ComponentActivity() {
             startForegroundService(intent)
         } else {
             startService(intent)
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Phase 7 Polish: Instantly update widget when user exits the app
+        lifecycleScope.launch {
+            SprintWidget().updateAll(this@MainActivity)
         }
     }
 }
