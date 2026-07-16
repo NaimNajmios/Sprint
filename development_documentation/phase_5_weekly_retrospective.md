@@ -37,22 +37,41 @@ A rich, scrollable analytics dashboard.
 
 | File | Action | Description |
 |------|--------|-------------|
-| `SettingsViewModel.kt` | Modified | Added `triggerClassifyNow()`, `ClassifyStatus` enum |
-| `SettingsScreen.kt` | Modified | Added `ClassifyNowCard` composable with reactive status |
+| `SettingsViewModel.kt` | Modified | Added `triggerClassifyNow()`, `triggerRetroNow()`, `ClassifyStatus` enum |
+| `SettingsScreen.kt` | Modified | Added `ClassifyNowCard`, `ActionCard` (reusable), and `Generate Retro` card |
 | `RetroViewModel.kt` | Created | Weekly aggregation logic, daily breakdown, top app |
 | `RetroScreen.kt` | Created | Full retro UI with charts, stats, and insight cards |
+| `RetroGenerationWorker.kt` | Created | HiltWorker that aggregates weekly stats, calls Groq, saves RetroEntry |
+| `RetroViewModelTest.kt` | Created | 5 unit tests covering aggregation, top app, daily breakdown, retro passthrough |
 | `MainScreen.kt` | Modified | Added Retro tab + route to navigation |
 
 ## 4. Testing & Verification
 
 ### Manual Testing
 1. **Classify Now**: Navigate to Settings → tap "Run" → observe status change from "AI is classifying…" to "Classification complete ✓". Return to Dashboard and verify previously unclassified sessions now have context labels.
-2. **Retro Screen**: Navigate to Retro tab → verify hero stat cards show aggregated weekly totals → verify bar chart renders with context-colored segments → verify context breakdown rows show proportional progress bars.
+2. **Generate Retro**: Navigate to Settings → tap "Run" on the "Generate Weekly Retro" card → observe status → navigate to the Retro tab and verify the AI insight card appears.
+3. **Retro Screen**: Navigate to Retro tab → verify hero stat cards show aggregated weekly totals → verify bar chart renders with context-colored segments → verify context breakdown rows show proportional progress bars.
 
-### Automated Testing
-*   The `RetroViewModel` aggregation logic is fully unit-testable using the same MockK + Turbine pattern established in Phase 4.
-*   Key assertions: correct weekly minute sums, correct daily grouping by `dayOfWeek`, correct identification of top app.
+### Automated Testing (`RetroViewModelTest`)
+5 unit tests, all passing:
+*   `empty sessions produce zero totals` — Verifies default state when no sessions exist.
+*   `sessions are aggregated per context correctly` — Asserts exact minute sums for Work and Life.
+*   `top app is identified correctly` — Asserts the package with the highest cumulative usage wins.
+*   `daily breakdown has 7 entries` — Asserts Mon–Sun labels always present.
+*   `retro entries are passed through to state` — Asserts AI-generated summaries appear in state.
 
-## 5. Next Steps
+## 5. AI Retro Generation Pipeline
+
+The `RetroGenerationWorker` implements the following pipeline:
+1. **Guard**: Checks if a `RetroEntry` already exists for the current week; skips if so.
+2. **Aggregate**: Queries all sessions from the past 7 days, computes per-context totals and top-5 apps.
+3. **Prompt**: Feeds the aggregated stats into a Groq `llama3-70b-8192` prompt with a "productivity coach" system role.
+4. **Save**: Stores the AI-generated plain-text summary as a `RetroEntry` in Room.
+5. **Flag**: Identifies the least-used context as the `flaggedContextId` for attention.
+
+The worker can be triggered:
+*   **Manually**: Via the "Generate Weekly Retro" button in Settings.
+*   **Automatically**: Can be scheduled as a `PeriodicWorkRequest` (e.g., every Sunday at midnight).
+
+## 6. Next Steps
 *   **Phase 6 (Cloud Sync)**: Implement the `core-sync` Ktor client to back up Contexts, Tasks, and Sessions to a remote server.
-*   **AI Weekly Summary Generation**: Add a scheduled worker that generates a `RetroEntry` using Groq at the end of each week, feeding it the aggregated stats as context.

@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.AutoFixHigh
+import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -31,6 +32,7 @@ fun SettingsScreen(
 ) {
     val lastTrackedTime by viewModel.lastTrackedSessionTime.collectAsState()
     val classifyStatus by viewModel.classifyStatus.collectAsState()
+    val retroStatus by viewModel.retroStatus.collectAsState()
     val context = LocalContext.current
     
     // Check if service is currently running
@@ -65,6 +67,19 @@ fun SettingsScreen(
             ClassifyNowCard(
                 status = classifyStatus,
                 onClassifyNow = { viewModel.triggerClassifyNow() }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ActionCard(
+                icon = Icons.Rounded.Psychology,
+                title = "Generate Weekly Retro",
+                status = retroStatus,
+                idleText = "Tap to generate AI weekly summary",
+                runningText = "AI is writing your retro\u2026",
+                successText = "Retro generated \u2713",
+                failedText = "Generation failed. Retry?",
+                onAction = { viewModel.triggerRetroNow() }
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -141,6 +156,29 @@ private fun ClassifyNowCard(
     status: ClassifyStatus,
     onClassifyNow: () -> Unit
 ) {
+    ActionCard(
+        icon = Icons.Rounded.AutoFixHigh,
+        title = "Classify Now",
+        status = status,
+        idleText = "Tap to classify untagged sessions",
+        runningText = "AI is classifying\u2026",
+        successText = "Classification complete \u2713",
+        failedText = "Classification failed. Retry?",
+        onAction = onClassifyNow
+    )
+}
+
+@Composable
+private fun ActionCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    status: ClassifyStatus,
+    idleText: String,
+    runningText: String,
+    successText: String,
+    failedText: String,
+    onAction: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -155,7 +193,7 @@ private fun ClassifyNowCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Rounded.AutoFixHigh,
+                imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(32.dp)
@@ -165,17 +203,17 @@ private fun ClassifyNowCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Classify Now",
+                    text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = when (status) {
-                        ClassifyStatus.Idle -> "Tap to classify untagged sessions"
-                        ClassifyStatus.Running -> "AI is classifying…"
-                        ClassifyStatus.Success -> "Classification complete ✓"
-                        ClassifyStatus.Failed -> "Classification failed. Retry?"
+                        ClassifyStatus.Idle -> idleText
+                        ClassifyStatus.Running -> runningText
+                        ClassifyStatus.Success -> successText
+                        ClassifyStatus.Failed -> failedText
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -183,7 +221,7 @@ private fun ClassifyNowCard(
             }
 
             Button(
-                onClick = onClassifyNow,
+                onClick = onAction,
                 enabled = status != ClassifyStatus.Running
             ) {
                 if (status == ClassifyStatus.Running) {
