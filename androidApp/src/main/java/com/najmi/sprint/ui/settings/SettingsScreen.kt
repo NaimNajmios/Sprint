@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.AutoFixHigh
 import androidx.compose.material.icons.rounded.Psychology
@@ -33,6 +34,7 @@ fun SettingsScreen(
     val lastTrackedTime by viewModel.lastTrackedSessionTime.collectAsState()
     val classifyStatus by viewModel.classifyStatus.collectAsState()
     val retroStatus by viewModel.retroStatus.collectAsState()
+    val syncStatus by viewModel.syncStatus.collectAsState()
     val context = LocalContext.current
     
     // Check if service is currently running
@@ -80,6 +82,28 @@ fun SettingsScreen(
                 successText = "Retro generated \u2713",
                 failedText = "Generation failed. Retry?",
                 onAction = { viewModel.triggerRetroNow() }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- Cloud Sync Section ---
+            Text(
+                text = "Cloud Sync",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            ActionCard(
+                icon = Icons.Rounded.CloudSync,
+                title = "Sync to Supabase",
+                status = syncStatus,
+                idleText = "Backup and restore your data",
+                runningText = "Syncing with cloud\u2026",
+                successText = "Sync complete \u2713",
+                failedText = "Sync failed. Retry?",
+                onAction = { viewModel.triggerSyncNow() }
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -153,7 +177,7 @@ private fun HealthCard(title: String, subtitle: String, isHealthy: Boolean) {
 
 @Composable
 private fun ClassifyNowCard(
-    status: ClassifyStatus,
+    status: ActionStatus,
     onClassifyNow: () -> Unit
 ) {
     ActionCard(
@@ -172,7 +196,7 @@ private fun ClassifyNowCard(
 private fun ActionCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
-    status: ClassifyStatus,
+    status: ActionStatus,
     idleText: String,
     runningText: String,
     successText: String,
@@ -210,10 +234,10 @@ private fun ActionCard(
                 )
                 Text(
                     text = when (status) {
-                        ClassifyStatus.Idle -> idleText
-                        ClassifyStatus.Running -> runningText
-                        ClassifyStatus.Success -> successText
-                        ClassifyStatus.Failed -> failedText
+                        ActionStatus.Idle -> idleText
+                        ActionStatus.Running -> runningText
+                        ActionStatus.Success -> successText
+                        ActionStatus.Failed -> failedText
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -222,9 +246,9 @@ private fun ActionCard(
 
             Button(
                 onClick = onAction,
-                enabled = status != ClassifyStatus.Running
+                enabled = status != ActionStatus.Running
             ) {
-                if (status == ClassifyStatus.Running) {
+                if (status == ActionStatus.Running) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
                         strokeWidth = 2.dp,
