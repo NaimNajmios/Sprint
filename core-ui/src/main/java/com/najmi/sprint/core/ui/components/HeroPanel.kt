@@ -40,7 +40,7 @@ fun HeroPanel(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyMedium,
@@ -118,7 +118,7 @@ fun WaveChart(
         val lastY = lastNormY * (size.height - 12.dp.toPx()) + 6.dp.toPx()
         
         drawCircle(
-            color = Color(0xFFC8FF00),
+            color = Color.White,
             radius = 5.dp.toPx(),
             center = Offset(lastX, lastY)
         )

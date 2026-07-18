@@ -11,15 +11,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = BrandPrimary,
-    onPrimary = OnPrimary,
+    primary = androidx.compose.ui.graphics.Color.White,
+    onPrimary = androidx.compose.ui.graphics.Color.Black,
     background = DarkSurfaceBase,
     onBackground = OnDarkSurface,
     surface = DarkSurfaceSheet,
     onSurface = OnDarkSurface,
     surfaceVariant = SurfaceHero,
     onSurfaceVariant = OnDarkSurface,
-    // We keep default M3 colors for tertiary, error etc as they are not defined in the new spec
 )
 
 private val LightColorScheme = lightColorScheme(

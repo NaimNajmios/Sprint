@@ -86,8 +86,8 @@ class SprintWidget : GlanceAppWidget() {
 }
 
 
-val NavyHero = ColorProvider(Color(0xFF161A2C))
-val Chartreuse = ColorProvider(Color(0xFFC8FF00))
+val NavyHero = ColorProvider(Color(0xFF000000))
+val Chartreuse = ColorProvider(Color(0xFFFFFFFF))
 val WhiteSheet = ColorProvider(Color(0xFFFFFFFF))
 val DarkText = ColorProvider(Color(0xFF1C1D21))
 val GrayText = ColorProvider(Color(0xFF737784))
@@ -151,7 +151,7 @@ fun WidgetContent(timeString: String, topTask: Task?) {
                     Text(
                         text = topTask.status.name.replace("_", " "),
                         style = TextStyle(
-                            color = Chartreuse, // Just to add the brand splash
+                            color = DarkText, // Replaced Chartreuse to maintain B&W contrast
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
