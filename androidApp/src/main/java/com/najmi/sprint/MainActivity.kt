@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.ui.theme.SprintTheme
@@ -46,8 +47,8 @@ class MainActivity : ComponentActivity() {
                 val hasPermission by permissionViewModel.hasUsagePermission.collectAsState()
                 
                 val sharedPrefs = getSharedPreferences("sprint_prefs", Context.MODE_PRIVATE)
-                var showOnboarding by mutableStateOf(sharedPrefs.getBoolean("show_onboarding", true))
-                var showAuth by mutableStateOf(!authManager.isLoggedIn())
+                var showOnboarding by remember { mutableStateOf(sharedPrefs.getBoolean("show_onboarding", true)) }
+                var showAuth by remember { mutableStateOf(!authManager.isLoggedIn()) }
 
                 LaunchedEffect(hasPermission, showAuth, showOnboarding) {
                     if (hasPermission && !showAuth && !showOnboarding) {

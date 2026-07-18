@@ -12,7 +12,12 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.After
 import org.junit.Test
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
+import io.mockk.every
+import com.najmi.sprint.core.domain.logger.AppLogger
 
 class TrackingEngineTest {
 
@@ -24,11 +29,22 @@ class TrackingEngineTest {
 
     @Before
     fun setup() {
+        mockkObject(AppLogger)
+        every { AppLogger.d(any(), any()) } returns Unit
+        every { AppLogger.e(any(), any(), any()) } returns Unit
+        every { AppLogger.i(any(), any()) } returns Unit
+        every { AppLogger.w(any(), any(), any()) } returns Unit
+
         sessionRepository = mockk(relaxed = true)
         ruleRepository = mockk(relaxed = true)
         usageStatsTracker = mockk(relaxed = true)
         mockContext = mockk(relaxed = true)
         engine = TrackingEngine(sessionRepository, ruleRepository, usageStatsTracker, mockContext)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     @Test
