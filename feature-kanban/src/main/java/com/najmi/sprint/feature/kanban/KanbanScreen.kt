@@ -34,6 +34,7 @@ fun KanbanScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showAddTaskDialog by remember { mutableStateOf(false) }
+    var viewMode by remember { mutableStateOf("Board") }
 
     if (state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -55,8 +56,8 @@ fun KanbanScreen(
                 title = "TASK BOARD",
                 heroFigure = "$activeCount Active",
                 toggleOptions = listOf("Board", "List"),
-                selectedToggle = "Board",
-                onToggleSelected = { /* TODO Phase 11 View toggle */ },
+                selectedToggle = viewMode,
+                onToggleSelected = { viewMode = it },
                 chartData = listOf(1f, 2f, 1.5f, 3f, 2f), // Subtle dummy wave
                 modifier = Modifier.zIndex(0f)
             )
@@ -67,21 +68,61 @@ fun KanbanScreen(
                     .offset(y = (-24).dp)
                     .zIndex(1f)
             ) {
-                // Horizontal Board
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 8.dp)
-                ) {
-                    TaskStatus.entries.forEach { status ->
-                        KanbanColumn(
-                            status = status,
-                            tasks = state.tasksByStatus[status] ?: emptyList(),
-                            contexts = state.contexts,
-                            onMoveTask = { taskId, newStatus -> viewModel.moveTask(taskId, newStatus) },
-                            onDeleteTask = { viewModel.deleteTask(it) }
-                        )
+                if (viewMode == "Board") {
+                    // Horizontal Board
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 8.dp)
+                    ) {
+                        TaskStatus.entries.forEach { status ->
+                            KanbanColumn(
+                                status = status,
+                                tasks = state.tasksByStatus[status] ?: emptyList(),
+                                contexts = state.contexts,
+                                onMoveTask = { taskId, newStatus -> viewModel.moveTask(taskId, newStatus) },
+                                onDeleteTask = { viewModel.deleteTask(it) }
+                            )
+                        }
+                    }
+                } else {
+                    // Vertical List
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        contentPadding = PaddingValues(bottom = 80.dp, top = 8.dp)
+                    ) {
+                        TaskStatus.entries.forEach { status ->
+                            val tasks = state.tasksByStatus[status] ?: emptyList()
+                            if (tasks.isNotEmpty()) {
+                                item {
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 12.dp)) {
+                                        if (status == TaskStatus.IN_PROGRESS) {
+                                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                        }
+                                        Text(
+                                            text = status.name.replace("_", " "),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                                items(tasks, key = { it.id }) { task ->
+                                    val context = state.contexts.find { it.id == task.contextId }
+                                    TaskCard(
+                                        task = task,
+                                        context = context,
+                                        onMoveTask = { t, s -> viewModel.moveTask(t, s) },
+                                        onDeleteTask = { viewModel.deleteTask(it) }
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                }
+                            }
+                        }
                     }
                 }
             }

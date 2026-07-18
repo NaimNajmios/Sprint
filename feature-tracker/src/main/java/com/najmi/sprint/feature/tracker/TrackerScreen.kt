@@ -22,6 +22,8 @@ import androidx.compose.ui.zIndex
 import com.najmi.sprint.core.ui.theme.SurfaceHero
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.window.Dialog
 import androidx.core.graphics.drawable.toBitmap
@@ -72,19 +74,27 @@ fun TrackerScreen(
         if (data.size == 1) data + data else data // Ensure at least 2 points for Canvas path
     }
     
+    val localContext = androidx.compose.ui.platform.LocalContext.current
+    var timeRange by remember { mutableStateOf("Today") }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(SurfaceHero) // Match hero background
+            .background(MaterialTheme.colorScheme.surface) // Match sheet background to prevent black gap at bottom
     ) {
         // Top HeroPanel
         item {
             HeroPanel(
-                title = "TODAY",
+                title = timeRange.uppercase(),
                 heroFigure = formattedHeroTime,
                 toggleOptions = listOf("Today", "This Week"),
-                selectedToggle = "Today",
-                onToggleSelected = { /* TODO: Phase 11 Time Range Switch */ },
+                selectedToggle = timeRange,
+                onToggleSelected = { 
+                    timeRange = it 
+                    if (it == "This Week") {
+                        android.widget.Toast.makeText(localContext, "Weekly aggregation requires backend sync", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                },
                 chartData = waveData,
                 modifier = Modifier.zIndex(0f)
             )
@@ -432,6 +442,78 @@ fun SessionInspectorSheet(
         }
     }
 
+    var showSessionsList by remember { mutableStateOf(false) }
+
+    if (showSessionsList) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 24.dp)
+            ) {
+                IconButton(
+                    onClick = { showSessionsList = false },
+                    modifier = Modifier.offset(x = (-12).dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Text(
+                    text = "Batch Sessions",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(sessions.sortedByDescending { it.startTime }) { s ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                formatTime(s.startTime) + " - " + (s.endTime?.let { formatTime(it) } ?: "Now"), 
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                "ID: ${s.id.take(8)}...", 
+                                style = MaterialTheme.typography.labelSmall, 
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        }
+                        val durMs = s.endTime?.minus(s.startTime)?.inWholeMilliseconds ?: 0L
+                        Text(
+                            if (s.endTime == null) "Active" else formatDuration(durMs),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (s.endTime == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    HorizontalDivider(
+                        modifier = Modifier.padding(top = 12.dp), 
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+                    )
+                }
+            }
+        }
+        return // End composition here if showing list
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -565,74 +647,6 @@ fun SessionInspectorSheet(
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
-        }
-
-        var showSessionsList by remember { mutableStateOf(false) }
-        
-        if (showSessionsList) {
-            Dialog(onDismissRequest = { showSessionsList = false }) {
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp)
-                ) {
-                    Column(modifier = Modifier.padding(24.dp)) {
-                        Text(
-                            text = "Batch Sessions",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
-                        LazyColumn(
-                            modifier = Modifier.weight(1f, fill = false),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(sessions.sortedByDescending { it.startTime }) { s ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column {
-                                        Text(
-                                            formatTime(s.startTime) + " - " + (s.endTime?.let { formatTime(it) } ?: "Now"), 
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            "ID: ${s.id.take(8)}...", 
-                                            style = MaterialTheme.typography.labelSmall, 
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                        )
-                                    }
-                                    val durMs = s.endTime?.minus(s.startTime)?.inWholeMilliseconds ?: 0L
-                                    Text(
-                                        if (s.endTime == null) "Active" else formatDuration(durMs),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = if (s.endTime == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(top = 12.dp), 
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { showSessionsList = false },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant, 
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        ) {
-                            Text("Close")
-                        }
-                    }
-                }
-            }
         }
 
         // Technical IDs

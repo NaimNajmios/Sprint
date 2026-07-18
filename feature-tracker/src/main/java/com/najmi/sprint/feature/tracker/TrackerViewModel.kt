@@ -55,8 +55,9 @@ class TrackerViewModel @Inject constructor(
         // Calculate time spent per context
         val timeSpent = mutableMapOf<String, Long>()
         for (session in filteredSessions) {
-            val contextId = session.contextId ?: continue // Skip unclassified for the chart
-            val duration = session.endTime?.minus(session.startTime)?.inWholeMilliseconds ?: 0L
+            val end = session.endTime ?: Clock.System.now()
+            val duration = end.minus(session.startTime).inWholeMilliseconds
+            val contextId = session.contextId ?: "unclassified"
             timeSpent[contextId] = timeSpent.getOrDefault(contextId, 0L) + duration
         }
 
