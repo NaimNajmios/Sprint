@@ -9,17 +9,20 @@ import kotlinx.datetime.Instant
 data class ClassificationRuleEntity(
     @PrimaryKey val packageName: String,
     val contextId: String,
-    val lastConfirmedAt: Instant
+    val lastConfirmedAt: Instant,
+    val isIgnored: Boolean = false
 )
 
 fun ClassificationRuleEntity.toDomain() = ClassificationRule(
     packageName = packageName,
     contextId = contextId,
-    lastConfirmedAt = lastConfirmedAt
+    lastConfirmedAt = lastConfirmedAt,
+    isIgnored = isIgnored
 )
 
 fun ClassificationRule.toEntity() = ClassificationRuleEntity(
     packageName = packageName,
     contextId = contextId,
-    lastConfirmedAt = lastConfirmedAt
+    lastConfirmedAt = lastConfirmedAt,
+    isIgnored = isIgnored
 )

@@ -7,4 +7,6 @@ interface RuleRepository {
     suspend fun insertOrUpdateRule(rule: ClassificationRule)
     suspend fun getAllRules(): List<ClassificationRule>
     suspend fun deleteRule(packageName: String)
+    fun observeIgnoredRules(): kotlinx.coroutines.flow.Flow<List<ClassificationRule>>
+    suspend fun setPackageIgnored(packageName: String, isIgnored: Boolean)
 }

@@ -102,7 +102,8 @@ androidApp → feature-* → core-data → core-domain
 | **MVP** | **Android-only milestone** | |
 | 8–9 | Sync server + encryption | 🔲 |
 | 10 | Monochrome UI & Critical Fixes | ✅ |
-| 11–12 | Windows desktop expansion | 🔲 |
+| 11 | Ignored Package Management | ✅ |
+| 12 | Windows desktop expansion | 🔲 |
 | 13 | Physical signal tracking (Flip-to-pause) | ✅ |
 
 ---

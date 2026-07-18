@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.domain.model.Context
+import com.najmi.sprint.core.domain.util.PackageDisplayName
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,7 +100,7 @@ fun AppCategorizationRow(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = simplifyPackageName(packageName),
+                text = PackageDisplayName.simplify(packageName),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
@@ -130,8 +131,4 @@ fun AppCategorizationRow(
     }
 }
 
-private fun simplifyPackageName(pkg: String?): String {
-    if (pkg == null) return "Unknown"
-    val parts = pkg.split(".")
-    return parts.lastOrNull()?.replaceFirstChar { it.uppercase() } ?: pkg
-}
+private fun simplifyPackageName(pkg: String?): String = PackageDisplayName.simplify(pkg)

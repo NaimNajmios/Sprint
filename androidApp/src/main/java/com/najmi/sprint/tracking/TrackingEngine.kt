@@ -113,6 +113,10 @@ class TrackingEngine @Inject constructor(
         // Ignore system packages — treat as if the blip never happened
         if (newPackage in IGNORED_PACKAGES) return
 
+        // Dynamically configured ignore list
+        val rule = ruleRepository.getRuleForPackage(newPackage)
+        if (rule?.isIgnored == true) return
+
         // Ignore if it's the exact same app we are already tracking
         if (newPackage == currentPackage) return
 
@@ -231,6 +235,8 @@ class TrackingEngine @Inject constructor(
         for (event in events) {
             // Skip system packages in backfill too
             if (event.packageName in IGNORED_PACKAGES) continue
+            val rule = ruleRepository.getRuleForPackage(event.packageName)
+            if (rule?.isIgnored == true) continue
 
             // ACTIVITY_RESUMED = 1
             if (event.eventType == 1) { 

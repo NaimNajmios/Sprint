@@ -23,11 +23,20 @@ import com.najmi.sprint.core.data.local.entity.TaskEntity
         RetroEntryEntity::class,
         com.najmi.sprint.core.data.local.entity.ClassificationRuleEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class SprintDatabase : RoomDatabase() {
+    
+    companion object {
+        val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE classification_rules ADD COLUMN isIgnored INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+    }
+
     abstract fun contextDao(): ContextDao
     abstract fun projectDao(): ProjectDao
     abstract fun sessionDao(): SessionDao

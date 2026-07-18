@@ -17,6 +17,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.coroutines.delay
 import com.najmi.sprint.core.domain.logger.AppLogger
+import com.najmi.sprint.core.domain.util.PackageDisplayName
 
 @HiltWorker
 class ClassificationWorker @AssistedInject constructor(
@@ -30,6 +31,24 @@ class ClassificationWorker @AssistedInject constructor(
 
     private fun getAppMetadata(packageName: String): Triple<String, String, Boolean>? {
         return try {
+            val lookupName = PackageDisplayName.forPackage(packageName)
+            if (lookupName != null) {
+                val pm = applicationContext.packageManager
+                val appInfo = pm.getApplicationInfo(packageName, 0)
+                val categoryStr = when (appInfo.category) {
+                    android.content.pm.ApplicationInfo.CATEGORY_GAME -> "Game"
+                    android.content.pm.ApplicationInfo.CATEGORY_AUDIO -> "Audio"
+                    android.content.pm.ApplicationInfo.CATEGORY_VIDEO -> "Video"
+                    android.content.pm.ApplicationInfo.CATEGORY_IMAGE -> "Image"
+                    android.content.pm.ApplicationInfo.CATEGORY_SOCIAL -> "Social"
+                    android.content.pm.ApplicationInfo.CATEGORY_NEWS -> "News"
+                    android.content.pm.ApplicationInfo.CATEGORY_MAPS -> "Maps"
+                    android.content.pm.ApplicationInfo.CATEGORY_PRODUCTIVITY -> "Productivity"
+                    else -> "Unknown"
+                }
+                val isSystemApp = (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0
+                return Triple(lookupName, categoryStr, isSystemApp)
+            }
             val pm = applicationContext.packageManager
             val appInfo = pm.getApplicationInfo(packageName, 0)
             val appName = pm.getApplicationLabel(appInfo).toString()
@@ -88,13 +107,14 @@ class ClassificationWorker @AssistedInject constructor(
                 val metadata = getAppMetadata(session.rawLabel)
                 
                 if (metadata == null) {
-                    AppLogger.d("ClassificationWorker", "Package not found: ${session.rawLabel}. Marking as UNCLASSIFIED.")
-                    sessionRepository.updateSession(session.copy(contextId = "UNCLASSIFIED"))
+                    AppLogger.d("ClassificationWorker", "Package not found: ${session.rawLabel}. Marking as Ignored.")
+                    sessionRepository.deleteSession(session.id)
                     ruleRepository.insertOrUpdateRule(
                         ClassificationRule(
                             packageName = session.rawLabel,
                             contextId = "UNCLASSIFIED",
-                            lastConfirmedAt = Clock.System.now()
+                            lastConfirmedAt = Clock.System.now(),
+                            isIgnored = true
                         )
                     )
                     continue
@@ -105,13 +125,14 @@ class ClassificationWorker @AssistedInject constructor(
                 val isSystemApp = metadata.third
                 
                 if (isSystemApp) {
-                    AppLogger.d("ClassificationWorker", "System app detected: ${session.rawLabel}. Marking as UNCLASSIFIED.")
-                    sessionRepository.updateSession(session.copy(contextId = "UNCLASSIFIED"))
+                    AppLogger.d("ClassificationWorker", "System app detected: ${session.rawLabel}. Marking as Ignored.")
+                    sessionRepository.deleteSession(session.id)
                     ruleRepository.insertOrUpdateRule(
                         ClassificationRule(
                             packageName = session.rawLabel,
                             contextId = "UNCLASSIFIED",
-                            lastConfirmedAt = Clock.System.now()
+                            lastConfirmedAt = Clock.System.now(),
+                            isIgnored = true
                         )
                     )
                     continue

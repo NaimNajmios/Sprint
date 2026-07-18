@@ -38,6 +38,7 @@ import com.najmi.sprint.ui.settings.SettingsScreen
 import com.najmi.sprint.ui.settings.DebugConsoleScreen
 import com.najmi.sprint.ui.context.ContextManagerScreen
 import com.najmi.sprint.ui.project.ProjectManagerScreen
+import com.najmi.sprint.ui.settings.IgnoredPackagesScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -250,7 +251,13 @@ fun MainScreen(
             composable("settings") {
                 SettingsScreen(
                     onNavigateToContextManager = { navController.navigate("context_manager") },
+                    onNavigateToIgnoredPackages = { navController.navigate("ignored_packages") },
                     onNavigateToDebugConsole = { navController.navigate("debug_console") }
+                )
+            }
+            composable("ignored_packages") {
+                IgnoredPackagesScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
             composable("debug_console") {

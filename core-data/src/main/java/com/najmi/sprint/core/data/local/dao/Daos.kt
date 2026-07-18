@@ -147,4 +147,10 @@ interface RuleDao {
 
     @Query("DELETE FROM classification_rules WHERE packageName = :packageName")
     suspend fun deleteRule(packageName: String)
+
+    @Query("SELECT * FROM classification_rules WHERE isIgnored = 1")
+    fun observeIgnoredRules(): Flow<List<com.najmi.sprint.core.data.local.entity.ClassificationRuleEntity>>
+
+    @Query("UPDATE classification_rules SET isIgnored = :isIgnored WHERE packageName = :packageName")
+    suspend fun setRuleIgnored(packageName: String, isIgnored: Boolean)
 }

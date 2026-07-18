@@ -94,6 +94,15 @@ class TrackerViewModel @Inject constructor(
         }
     }
 
+    fun ignoreApp(packageName: String, sessionIds: List<String>) {
+        viewModelScope.launch {
+            ruleRepository.setPackageIgnored(packageName, true)
+            sessionIds.forEach {
+                sessionRepository.deleteSession(it)
+            }
+        }
+    }
+
     suspend fun getProjectsForContext(contextId: String): List<Project> {
         return projectRepository.observeProjectsByContext(contextId).firstOrNull() ?: emptyList()
     }

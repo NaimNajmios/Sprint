@@ -184,4 +184,21 @@ class RoomRuleRepository @Inject constructor(
     override suspend fun deleteRule(packageName: String) {
         dao.deleteRule(packageName)
     }
+
+    override fun observeIgnoredRules(): kotlinx.coroutines.flow.Flow<List<com.najmi.sprint.core.domain.model.ClassificationRule>> =
+        dao.observeIgnoredRules().map { list -> list.map { it.toDomain() } }
+
+    override suspend fun setPackageIgnored(packageName: String, isIgnored: Boolean) {
+        val existing = dao.getRuleForPackage(packageName)
+        if (existing != null) {
+            dao.setRuleIgnored(packageName, isIgnored)
+        } else {
+            dao.insertRule(com.najmi.sprint.core.data.local.entity.ClassificationRuleEntity(
+                packageName = packageName,
+                contextId = "UNCLASSIFIED",
+                lastConfirmedAt = kotlinx.datetime.Clock.System.now(),
+                isIgnored = isIgnored
+            ))
+        }
+    }
 }

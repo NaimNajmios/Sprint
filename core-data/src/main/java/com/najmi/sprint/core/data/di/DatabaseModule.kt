@@ -57,6 +57,7 @@ object DatabaseModule {
             SprintDatabase::class.java,
             "sprint.db"
         )
+        .addMigrations(SprintDatabase.MIGRATION_1_2)
         .addCallback(SprintDatabaseCallback(provider, applicationScope))
         .build()
     }

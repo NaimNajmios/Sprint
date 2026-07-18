@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.domain.model.Context
+import com.najmi.sprint.core.domain.util.PackageDisplayName
 import com.najmi.sprint.core.ui.components.HeroPanel
 import com.najmi.sprint.core.ui.components.SheetList
 
@@ -80,7 +81,7 @@ fun RetroScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = simplifyPackageName(state.topApp),
+                            text = PackageDisplayName.simplify(state.topApp),
                             style = MaterialTheme.typography.titleMedium, // Inter SemiBold
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -319,8 +320,4 @@ private fun formatHeroMinutes(minutes: Long): String {
     return "${h}h ${m.toString().padStart(2, '0')}m"
 }
 
-private fun simplifyPackageName(pkg: String?): String {
-    if (pkg == null) return "N/A"
-    val parts = pkg.split(".")
-    return parts.lastOrNull()?.replaceFirstChar { it.uppercase() } ?: pkg
-}
+private fun simplifyPackageName(pkg: String?): String = PackageDisplayName.simplify(pkg)

@@ -32,6 +32,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.domain.model.Context
+import com.najmi.sprint.core.domain.util.PackageDisplayName
 import com.najmi.sprint.core.domain.model.Project
 import com.najmi.sprint.core.domain.model.Session
 import com.najmi.sprint.core.ui.components.HeroPanel
@@ -250,27 +251,30 @@ fun SessionCard(
 
     val pm = localContext.packageManager
 
-    var appName by remember(session.rawLabel) { mutableStateOf(simplifyPackageName(session.rawLabel)) }
+    var appName by remember(session.rawLabel) { mutableStateOf(PackageDisplayName.simplify(session.rawLabel)) }
     var appIconBitmap by remember(session.rawLabel) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
 
     LaunchedEffect(session.rawLabel) {
         withContext(Dispatchers.IO) {
             try {
-                // If it's the debug build itself, it has ".debug" suffix but we should show "Sprint"
                 val pkgName = session.rawLabel ?: ""
-                val appInfo = pm.getApplicationInfo(pkgName, 0)
-                val label = pm.getApplicationLabel(appInfo).toString()
-                
-                // Get the icon and convert to Bitmap
-                val drawable = pm.getApplicationIcon(appInfo)
-                val bitmap = drawable.toBitmap(width = 144, height = 144).asImageBitmap()
-                
-                withContext(Dispatchers.Main) {
-                    appName = label
-                    appIconBitmap = bitmap
+                val lookupName = PackageDisplayName.forPackage(pkgName)
+                if (lookupName != null) {
+                    withContext(Dispatchers.Main) { appName = lookupName }
+                } else {
+                    val appInfo = pm.getApplicationInfo(pkgName, 0)
+                    val label = pm.getApplicationLabel(appInfo).toString()
+                    
+                    val drawable = pm.getApplicationIcon(appInfo)
+                    val bitmap = drawable.toBitmap(width = 144, height = 144).asImageBitmap()
+                    
+                    withContext(Dispatchers.Main) {
+                        appName = label
+                        appIconBitmap = bitmap
+                    }
                 }
             } catch (e: Exception) {
-                // Fallback to simplifyPackageName
+                // Keep simplified name
             }
         }
     }
@@ -424,20 +428,25 @@ fun SessionInspectorSheet(
         }
     }
 
-    var appName by remember(primarySession.rawLabel) { mutableStateOf(simplifyPackageName(primarySession.rawLabel)) }
+    val pkgName = primarySession.rawLabel ?: ""
+    var appName by remember(pkgName) { mutableStateOf(PackageDisplayName.simplify(pkgName)) }
     val pm = LocalContext.current.packageManager
     
-    LaunchedEffect(primarySession.rawLabel) {
-        withContext(Dispatchers.IO) {
-            try {
-                val pkgName = primarySession.rawLabel ?: ""
-                val appInfo = pm.getApplicationInfo(pkgName, 0)
-                val label = pm.getApplicationLabel(appInfo).toString()
-                withContext(Dispatchers.Main) {
-                    appName = label
+    LaunchedEffect(pkgName) {
+        val lookupName = PackageDisplayName.forPackage(pkgName)
+        if (lookupName != null) {
+            appName = lookupName
+        } else {
+            withContext(Dispatchers.IO) {
+                try {
+                    val appInfo = pm.getApplicationInfo(pkgName, 0)
+                    val label = pm.getApplicationLabel(appInfo).toString()
+                    withContext(Dispatchers.Main) {
+                        appName = label
+                    }
+                } catch (e: Exception) {
+                    // Keep simplified name
                 }
-            } catch (e: Exception) {
-                // Keep simplified name
             }
         }
     }
@@ -805,28 +814,49 @@ fun SessionInspectorSheet(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        Button(
-            onClick = { showConfirmDialog = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = RoundedCornerShape(24.dp), // Pill shape for Daily Ledger
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White // Fix: Make text white instead of black
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                "Save Changes",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold
-            )
+            OutlinedButton(
+                onClick = {
+                    viewModel.ignoreApp(primarySession.rawLabel, sessions.map { it.id })
+                    onClose()
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text(
+                    "Ignore App",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            
+            Button(
+                onClick = { showConfirmDialog = true },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    "Save Changes",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
 
-private fun simplifyPackageName(pkg: String?): String {
-    if (pkg == null) return "Unknown"
-    val parts = pkg.split(".")
-    return parts.lastOrNull()?.replaceFirstChar { it.uppercase() } ?: pkg
-}
+private fun simplifyPackageName(pkg: String?): String = PackageDisplayName.simplify(pkg)
