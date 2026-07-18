@@ -51,8 +51,17 @@ fun TrackerScreen(
     val totalTime = state.timeSpentPerContext.values.sum()
     val formattedHeroTime = formatHeroDuration(totalTime)
 
-    // Temporary fake wave data (until Phase 11 real metrics)
-    val waveData = if (state.todaySessions.isEmpty()) emptyList() else listOf(10f, 25f, 15f, 30f, 20f, 35f, 10f)
+    // Map real session durations (in minutes) to the wave chart
+    val waveData = if (state.todaySessions.isEmpty()) {
+        emptyList()
+    } else {
+        val now = kotlinx.datetime.Clock.System.now()
+        val data = state.todaySessions.map { session ->
+            val end = session.endTime ?: now
+            end.minus(session.startTime).inWholeMinutes.toFloat().coerceAtLeast(1f)
+        }
+        if (data.size == 1) data + data else data // Ensure at least 2 points for Canvas path
+    }
     
     // For Context Filter Pill Toggle inside the SheetList
     val filterOptions = listOf("All") + state.contexts.map { it.name }.take(3)

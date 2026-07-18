@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -19,11 +20,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.domain.model.Context
 import com.najmi.sprint.core.domain.model.Task
 import com.najmi.sprint.core.domain.model.TaskStatus
+import com.najmi.sprint.core.ui.components.HeroPanel
+import com.najmi.sprint.core.ui.components.SheetList
 
 @Composable
 fun KanbanScreen(
@@ -39,71 +42,75 @@ fun KanbanScreen(
         return
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // Alexandria: Editorial header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "TASK BOARD",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Kanban",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
-            
-            FloatingActionButton(
-                onClick = { showAddTaskDialog = true },
-                modifier = Modifier.size(48.dp),
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Task")
-            }
-        }
+    val activeCount = (state.tasksByStatus[TaskStatus.BACKLOG]?.size ?: 0) + (state.tasksByStatus[TaskStatus.IN_PROGRESS]?.size ?: 0)
 
-        // Horizontal Board
-        Row(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 8.dp)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            TaskStatus.entries.forEach { status ->
-                KanbanColumn(
-                    status = status,
-                    tasks = state.tasksByStatus[status] ?: emptyList(),
-                    contexts = state.contexts,
-                    onMoveTask = { taskId, newStatus -> viewModel.moveTask(taskId, newStatus) },
-                    onDeleteTask = { viewModel.deleteTask(it) }
-                )
+            // Daily Ledger: HeroPanel
+            HeroPanel(
+                title = "TASK BOARD",
+                heroFigure = "$activeCount Active",
+                toggleOptions = listOf("Board", "List"),
+                selectedToggle = "Board",
+                onToggleSelected = { /* TODO Phase 11 View toggle */ },
+                chartData = listOf(1f, 2f, 1.5f, 3f, 2f), // Subtle dummy wave
+                modifier = Modifier.zIndex(0f)
+            )
+
+            // SheetList overlapping HeroPanel
+            SheetList(
+                modifier = Modifier
+                    .offset(y = (-24).dp)
+                    .zIndex(1f)
+            ) {
+                // Horizontal Board
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 8.dp)
+                ) {
+                    TaskStatus.entries.forEach { status ->
+                        KanbanColumn(
+                            status = status,
+                            tasks = state.tasksByStatus[status] ?: emptyList(),
+                            contexts = state.contexts,
+                            onMoveTask = { taskId, newStatus -> viewModel.moveTask(taskId, newStatus) },
+                            onDeleteTask = { viewModel.deleteTask(it) }
+                        )
+                    }
+                }
             }
         }
-    }
 
-    if (showAddTaskDialog) {
-        AddTaskDialog(
-            onDismiss = { showAddTaskDialog = false },
-            onAdd = { title ->
-                viewModel.addTask(title)
-                showAddTaskDialog = false
-            }
-        )
+        // FAB positioned bottom right
+        FloatingActionButton(
+            onClick = { showAddTaskDialog = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp)
+                .size(56.dp)
+                .zIndex(2f),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = Color.Black,
+            shape = RoundedCornerShape(16.dp) // Large tier shape
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Add Task")
+        }
+
+        if (showAddTaskDialog) {
+            AddTaskDialog(
+                onDismiss = { showAddTaskDialog = false },
+                onAdd = { title ->
+                    viewModel.addTask(title)
+                    showAddTaskDialog = false
+                }
+            )
+        }
     }
 }
 
@@ -115,22 +122,15 @@ fun KanbanColumn(
     onMoveTask: (String, TaskStatus) -> Unit,
     onDeleteTask: (String) -> Unit
 ) {
-    // Alexandria: Tonal surface shifts per column, no hard borders
     val isActive = status == TaskStatus.IN_PROGRESS
-    
+
     Column(
         modifier = Modifier
             .width(300.dp)
             .fillMaxHeight()
             .padding(8.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(
-                if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
-                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
-            )
-            .padding(8.dp)
     ) {
-        // Column header
+        // Column header: Daily Ledger styling (crisp, transparent surface, small dot indicator)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -143,7 +143,7 @@ fun KanbanColumn(
                     Box(
                         modifier = Modifier
                             .size(8.dp)
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -152,22 +152,21 @@ fun KanbanColumn(
                     text = status.name.replace("_", " "),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Medium,
-                    color = if (isActive) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
+            
+            // Task count pill
             Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                        else MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
                 modifier = Modifier.defaultMinSize(minWidth = 24.dp)
             ) {
                 Text(
                     text = tasks.size.toString(),
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isActive) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -175,9 +174,10 @@ fun KanbanColumn(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            contentPadding = PaddingValues(bottom = 80.dp), // Padding for FAB
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(tasks) { task ->
+            items(tasks, key = { it.id }) { task ->
                 val context = contexts.find { it.id == task.contextId }
                 TaskCard(
                     task = task,
@@ -199,34 +199,37 @@ fun TaskCard(
 ) {
     var expandedMenu by remember { mutableStateOf(false) }
 
-    // Alexandria: Surface cards, ghost borders via outline_variant at 15%
+    // Daily Ledger: Card with outline or very subtle elevation on white surface
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 1.dp
+        shadowElevation = 2.dp, // Subtle depth
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
+                .padding(16.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                // Context tag
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = parseColor(context?.colorHex ?: "#888888").copy(alpha = 0.12f),
-                ) {
+                // Context tag: Now using the dot indicator approach
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(parseColor(context?.colorHex ?: "#888888"))
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = context?.name ?: "Global",
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         style = MaterialTheme.typography.labelSmall,
-                        color = parseColor(context?.colorHex ?: "#888888"),
-                        fontWeight = FontWeight.SemiBold
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
                     )
                 }
 
@@ -242,7 +245,8 @@ fun TaskCard(
 
                     DropdownMenu(
                         expanded = expandedMenu,
-                        onDismissRequest = { expandedMenu = false }
+                        onDismissRequest = { expandedMenu = false },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                     ) {
                         TaskStatus.entries.forEach { status ->
                             if (status != task.status) {
@@ -261,7 +265,7 @@ fun TaskCard(
                             }
                         }
                         HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
                         )
                         DropdownMenuItem(
                             text = {
@@ -280,11 +284,12 @@ fun TaskCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = task.title,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -304,7 +309,8 @@ fun AddTaskDialog(
             Text(
                 "New Task",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
         },
         text = {
@@ -321,17 +327,22 @@ fun AddTaskDialog(
             Button(
                 onClick = { if (title.isNotBlank()) onAdd(title) },
                 enabled = title.isNotBlank(),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.Black
+                )
             ) {
-                Text("Add", style = MaterialTheme.typography.labelMedium)
+                Text("Add", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", style = MaterialTheme.typography.labelMedium)
+                Text("Cancel", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(24.dp), // Daily Ledger large shape
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 

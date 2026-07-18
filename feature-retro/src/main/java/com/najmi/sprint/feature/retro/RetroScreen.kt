@@ -20,8 +20,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.domain.model.Context
+import com.najmi.sprint.core.ui.components.HeroPanel
+import com.najmi.sprint.core.ui.components.SheetList
 
 @Composable
 fun RetroScreen(
@@ -36,253 +39,106 @@ fun RetroScreen(
         return
     }
 
-    LazyColumn(
+    // Map daily breakdown totals to wave chart floats
+    val waveData = state.dailyBreakdown.map { it.totalMinutes.toFloat() }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Alexandria: Editorial hero with left border accent
-        item {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "WEEKLY",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Retrospective",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
+        // Daily Ledger: HeroPanel
+        HeroPanel(
+            title = "THIS WEEK",
+            heroFigure = formatHeroMinutes(state.weeklyTotalMinutes),
+            toggleOptions = listOf("This Week", "Last Week"),
+            selectedToggle = "This Week",
+            onToggleSelected = { /* TODO Phase 11 Time Navigation */ },
+            chartData = if (waveData.size >= 2) waveData else if (waveData.size == 1) waveData + waveData else emptyList(),
+            modifier = Modifier.zIndex(0f)
+        )
 
-        // --- Hero Stats Cards ---
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+        // SheetList Overlapping the Hero
+        SheetList(
+            modifier = Modifier
+                .offset(y = (-24).dp)
+                .zIndex(1f)
+        ) {
+            LazyColumn(
+                contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 80.dp),
+                verticalArrangement = Arrangement.spacedBy(32.dp)
             ) {
-                StatCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.AutoMirrored.Rounded.TrendingUp,
-                    label = "TOTAL TRACKED",
-                    value = formatMinutes(state.weeklyTotalMinutes),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                StatCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Rounded.Star,
-                    label = "TOP APP",
-                    value = simplifyPackageName(state.topApp),
-                    color = MaterialTheme.colorScheme.tertiary
-                )
-            }
-        }
-
-        // --- Weekly Bar Chart ---
-        item {
-            Text(
-                text = "Daily Activity",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-
-        item {
-            WeeklyBarChart(
-                dailyBreakdown = state.dailyBreakdown,
-                contexts = state.contexts
-            )
-        }
-
-        // --- Context Breakdown ---
-        item {
-            Text(
-                text = "Context Breakdown",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-
-        items(state.weeklyPerContext.entries.toList()) { (contextId, minutes) ->
-            val context = state.contexts.find { it.id == contextId }
-            ContextBreakdownRow(
-                contextName = context?.name ?: "Unclassified",
-                colorHex = context?.colorHex ?: "#888888",
-                minutes = minutes,
-                totalMinutes = state.weeklyTotalMinutes
-            )
-        }
-
-        // --- AI Insights ---
-        if (state.retros.isNotEmpty()) {
-            item {
-                Text(
-                    text = "AI Insights",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
-
-            items(state.retros) { retro ->
-                // Alexandria: Left accent border for editorial feel
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(2.dp),
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    Row {
-                        Box(
-                            modifier = Modifier
-                                .width(4.dp)
-                                .fillMaxHeight()
-                                .background(MaterialTheme.colorScheme.primary)
+                
+                // --- Top App Stat ---
+                item {
+                    Column {
+                        Text(
+                            text = "Top Application",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Column(modifier = Modifier.padding(16.dp)) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = simplifyPackageName(state.topApp),
+                            style = MaterialTheme.typography.titleLarge, // Inter SemiBold
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                // --- AI Insights (Editorial Feel) ---
+                if (state.retros.isNotEmpty()) {
+                    items(state.retros) { retro ->
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Text(
-                                text = "Week of ${retro.weekOf}",
-                                style = MaterialTheme.typography.labelMedium,
+                                text = "AI Insight",
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(8.dp))
+                            // Using the DM Serif Display typography for the pull-quote feel
                             Text(
-                                text = retro.summaryText,
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = "“${retro.summaryText}”",
+                                style = MaterialTheme.typography.headlineMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
-                                fontStyle = FontStyle.Italic
+                                lineHeight = MaterialTheme.typography.headlineMedium.lineHeight
                             )
                         }
                     }
                 }
-            }
-        }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
-    }
-}
-
-@Composable
-fun StatCard(
-    modifier: Modifier = Modifier,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    value: String,
-    color: Color
-) {
-    // Alexandria: Surface tonal cards with no borders
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        color = color.copy(alpha = 0.08f)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-fun WeeklyBarChart(
-    dailyBreakdown: List<DailyBreakdown>,
-    contexts: List<Context>
-) {
-    val maxMinutes = dailyBreakdown.maxOfOrNull { it.totalMinutes }?.coerceAtLeast(1L) ?: 1L
-
-    var animationPlayed by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { animationPlayed = true }
-
-    val animProgress by animateFloatAsState(
-        targetValue = if (animationPlayed) 1f else 0f,
-        animationSpec = tween(durationMillis = 1200),
-        label = "barAnim"
-    )
-
-    // Alexandria: Surface card for chart
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.Bottom
-        ) {
-            dailyBreakdown.forEach { day ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Bottom,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    val barHeight = if (maxMinutes > 0) {
-                        (day.totalMinutes.toFloat() / maxMinutes) * 140f * animProgress
-                    } else 0f
-
-                    if (day.perContext.isNotEmpty()) {
-                        day.perContext.entries.forEachIndexed { index, (contextId, minutes) ->
-                            val ctx = contexts.find { it.id == contextId }
-                            val segmentHeight = if (day.totalMinutes > 0) {
-                                (minutes.toFloat() / day.totalMinutes) * barHeight
-                            } else 0f
-
-                            Box(
-                                modifier = Modifier
-                                    .width(24.dp)
-                                    .height(segmentHeight.dp)
-                                    .clip(
-                                        if (index == day.perContext.size - 1)
-                                            RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
-                                        else RoundedCornerShape(0.dp)
-                                    )
-                                    .background(parseColor(ctx?.colorHex ?: "#888888"))
-                            )
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .width(24.dp)
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
+                // --- Context Breakdown ---
+                item {
                     Text(
-                        text = day.dayLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "Context Breakdown",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                items(state.weeklyPerContext.entries.toList()) { (contextId, minutes) ->
+                    val context = state.contexts.find { it.id == contextId }
+                    ContextBreakdownRow(
+                        contextName = context?.name ?: "Unclassified",
+                        colorHex = context?.colorHex ?: "#888888",
+                        minutes = minutes,
+                        totalMinutes = state.weeklyTotalMinutes
+                    )
+                }
+
+                // --- Daily Activity Bar Chart ---
+                item {
+                    Text(
+                        text = "Daily Activity",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    WeeklyBarChart(
+                        dailyBreakdown = state.dailyBreakdown,
+                        contexts = state.contexts
                     )
                 }
             }
@@ -308,50 +164,119 @@ fun ContextBreakdownRow(
         label = "progressAnim"
     )
 
-    // Alexandria: Tonal surface, no border
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(parseColor(colorHex))
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = contextName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+    // Daily Ledger: Clean row, no tonal background, dot indicator
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(parseColor(colorHex))
+                )
+                Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = formatMinutes(minutes),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    text = contextName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = { animFraction },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = parseColor(colorHex),
-                trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f),
+            Text(
+                text = formatMinutes(minutes),
+                style = MaterialTheme.typography.labelMedium, // Plex Mono Data role
+                color = MaterialTheme.colorScheme.onSurface
             )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        LinearProgressIndicator(
+            progress = { animFraction },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp)),
+            color = parseColor(colorHex),
+            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Composable
+fun WeeklyBarChart(
+    dailyBreakdown: List<DailyBreakdown>,
+    contexts: List<Context>
+) {
+    val maxMinutes = dailyBreakdown.maxOfOrNull { it.totalMinutes }?.coerceAtLeast(1L) ?: 1L
+
+    var animationPlayed by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { animationPlayed = true }
+
+    val animProgress by animateFloatAsState(
+        targetValue = if (animationPlayed) 1f else 0f,
+        animationSpec = tween(durationMillis = 1200),
+        label = "barAnim"
+    )
+
+    // Daily Ledger: Clean white/surface background, removing heavy tonal boxes
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.Bottom
+    ) {
+        dailyBreakdown.forEach { day ->
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Bottom,
+                modifier = Modifier.weight(1f)
+            ) {
+                val barHeight = if (maxMinutes > 0) {
+                    (day.totalMinutes.toFloat() / maxMinutes) * 140f * animProgress
+                } else 0f
+
+                if (day.perContext.isNotEmpty()) {
+                    day.perContext.entries.forEachIndexed { index, (contextId, minutes) ->
+                        val ctx = contexts.find { it.id == contextId }
+                        val segmentHeight = if (day.totalMinutes > 0) {
+                            (minutes.toFloat() / day.totalMinutes) * barHeight
+                        } else 0f
+
+                        Box(
+                            modifier = Modifier
+                                .width(16.dp) // Thinner, crisper bars
+                                .height(segmentHeight.dp)
+                                .clip(
+                                    if (index == day.perContext.size - 1)
+                                        RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
+                                    else RoundedCornerShape(0.dp)
+                                )
+                                .background(parseColor(ctx?.colorHex ?: "#888888"))
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .width(16.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = day.dayLabel.take(3), // 'Mon', 'Tue'
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -368,6 +293,12 @@ private fun formatMinutes(minutes: Long): String {
     val h = minutes / 60
     val m = minutes % 60
     return if (h > 0) "${h}h ${m}m" else "${m}m"
+}
+
+private fun formatHeroMinutes(minutes: Long): String {
+    val h = minutes / 60
+    val m = minutes % 60
+    return "${h}h ${m.toString().padStart(2, '0')}m"
 }
 
 private fun simplifyPackageName(pkg: String?): String {

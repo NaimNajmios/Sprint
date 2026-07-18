@@ -49,7 +49,7 @@ androidApp → feature-* → core-data → core-domain
 
 | Layer | Choice |
 |---|---|
-| UI | Kotlin + Jetpack Compose |
+| UI | Kotlin + Jetpack Compose (Daily Ledger Design System) |
 | DI | Hilt (Dagger) |
 | Local DB | Room |
 | Networking | Ktor Client |
@@ -98,7 +98,7 @@ androidApp → feature-* → core-data → core-domain
 | 4 | Kanban & manual tasks | ✅ |
 | 5 | Weekly retro | ✅ |
 | 6 | Widget & glanceable UX | ✅ |
-| 7 | Testing & polish | 🔨 In Progress |
+| 7 | Testing, Polish & Design Overhaul | ✅ |
 | **MVP** | **Android-only milestone** | |
 | 8–9 | Sync server + encryption | 🔲 |
 | 10–11 | Windows desktop expansion | 🔲 |
@@ -109,7 +109,6 @@ androidApp → feature-* → core-data → core-domain
 ## Known Limitations
 
 - Single-device only (sync architecture designed but not yet deployed)
-- AI classification works but is not yet rate-limit-hardened (no backoff/daily cap)
 - Review queue for low-confidence classifications not yet built
 - Desktop target not yet added to the KMP project
 
