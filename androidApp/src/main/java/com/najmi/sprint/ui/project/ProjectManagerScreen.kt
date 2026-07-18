@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Block
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +27,7 @@ import com.najmi.sprint.core.domain.model.Project
 @Composable
 fun ProjectManagerScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToProjectDetail: (String) -> Unit,
     viewModel: ProjectManagerViewModel = hiltViewModel()
 ) {
     val projects by viewModel.projects.collectAsState()
@@ -109,6 +111,9 @@ fun ProjectManagerScreen(
                             projectToEdit = project
                             showDialog = true
                         },
+                        onClick = {
+                            onNavigateToProjectDetail(project.id)
+                        },
                         onDelete = {
                             viewModel.deleteProject(project.id)
                         }
@@ -140,12 +145,13 @@ fun ProjectItem(
     project: Project,
     defaultHex: String,
     onEdit: () -> Unit,
+    onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onEdit),
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
@@ -179,12 +185,21 @@ fun ProjectItem(
                 }
             }
 
-            IconButton(onClick = onDelete) {
-                Icon(
-                    imageVector = Icons.Rounded.Delete,
-                    contentDescription = "Delete Project",
-                    tint = MaterialTheme.colorScheme.error
-                )
+            Row {
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Default.Edit,
+                        contentDescription = "Edit Project",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Rounded.Delete,
+                        contentDescription = "Delete Project",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }

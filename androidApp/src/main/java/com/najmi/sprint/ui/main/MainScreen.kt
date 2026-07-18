@@ -278,6 +278,17 @@ fun MainScreen(
                 arguments = listOf(androidx.navigation.navArgument("contextId") { type = androidx.navigation.NavType.StringType })
             ) {
                 ProjectManagerScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToProjectDetail = { projectId ->
+                        navController.navigate("project_detail/$projectId")
+                    }
+                )
+            }
+            composable(
+                route = "project_detail/{projectId}",
+                arguments = listOf(androidx.navigation.navArgument("projectId") { type = androidx.navigation.NavType.StringType })
+            ) {
+                com.najmi.sprint.ui.project.ProjectDetailScreen(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

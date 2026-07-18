@@ -13,6 +13,9 @@ interface GithubCacheDao {
     @Query("SELECT * FROM github_issues_cache WHERE projectId = :projectId")
     suspend fun getIssuesForProject(projectId: String): List<GithubIssueCacheEntity>
 
+    @Query("SELECT * FROM github_issues_cache WHERE projectId = :projectId")
+    fun observeIssuesForProject(projectId: String): kotlinx.coroutines.flow.Flow<List<GithubIssueCacheEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertIssues(issues: List<GithubIssueCacheEntity>)
 
