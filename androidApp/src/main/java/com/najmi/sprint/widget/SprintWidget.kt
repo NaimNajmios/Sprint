@@ -9,6 +9,8 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.unit.ColorProvider
+import androidx.compose.ui.graphics.Color
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -83,101 +85,84 @@ class SprintWidget : GlanceAppWidget() {
     }
 }
 
+
+val NavyHero = ColorProvider(Color(0xFF161A2C))
+val Chartreuse = ColorProvider(Color(0xFFC8FF00))
+val WhiteSheet = ColorProvider(Color(0xFFFFFFFF))
+val DarkText = ColorProvider(Color(0xFF1C1D21))
+val GrayText = ColorProvider(Color(0xFF737784))
+val WhiteFaded = ColorProvider(Color.White.copy(alpha = 0.7f))
+
 @Composable
 fun WidgetContent(timeString: String, topTask: Task?) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(GlanceTheme.colors.surface)
+            .background(NavyHero)
             .padding(16.dp)
             .clickable(actionStartActivity(Intent().apply {
                 component = ComponentName("com.najmi.sprint", "com.najmi.sprint.MainActivity")
             }))
     ) {
-        // Header
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Sprint",
-                style = TextStyle(
-                    color = GlanceTheme.colors.primary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
-            )
-            Spacer(modifier = GlanceModifier.defaultWeight())
-            Text(
-                text = "Open App",
-                style = TextStyle(
-                    color = GlanceTheme.colors.primary,
-                    fontSize = 12.sp
-                )
-            )
-        }
-
-        Spacer(modifier = GlanceModifier.height(16.dp))
-
-        // Dashboard Summary
+        // Daily Ledger: Hero metrics at the top
         Text(
-            text = "Today's Focus",
+            text = "TODAY's TRACKING",
             style = TextStyle(
-                color = GlanceTheme.colors.onSurface,
+                color = WhiteFaded,
                 fontWeight = FontWeight.Medium,
-                fontSize = 16.sp
+                fontSize = 12.sp
             )
         )
         
-        // We'll hydrate this with real Room data in the next step
+        Spacer(modifier = GlanceModifier.height(4.dp))
+        
         Text(
             text = timeString,
             style = TextStyle(
-                color = GlanceTheme.colors.onSurfaceVariant,
-                fontSize = 14.sp
+                color = ColorProvider(Color.White),
+                fontWeight = FontWeight.Bold,
+                fontSize = 28.sp
             ),
-            modifier = GlanceModifier.padding(top = 4.dp, bottom = 16.dp)
+            modifier = GlanceModifier.padding(bottom = 16.dp)
         )
 
-        // Top Task
-        Text(
-            text = "Top Priority Task",
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurface,
-                fontWeight = FontWeight.Medium,
-                fontSize = 16.sp
-            )
-        )
+        Spacer(modifier = GlanceModifier.defaultWeight())
 
+        // Top Task inside a white "Sheet" lookalike
         if (topTask != null) {
             Column(
                 modifier = GlanceModifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .background(GlanceTheme.colors.secondaryContainer)
+                    // Glance doesn't support advanced rounding easily without XML drawables,
+                    // but we can use cornerRadius (requires Android 12+) or just background.
+                    .background(WhiteSheet)
                     .padding(12.dp)
             ) {
-                Text(
-                    text = topTask.title,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSecondaryContainer,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
+                Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = topTask.title,
+                        style = TextStyle(
+                            color = DarkText,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
                     )
-                )
-                Text(
-                    text = topTask.status.name.replace("_", " "),
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSecondaryContainer,
-                        fontSize = 12.sp
+                    Spacer(modifier = GlanceModifier.defaultWeight())
+                    Text(
+                        text = topTask.status.name.replace("_", " "),
+                        style = TextStyle(
+                            color = Chartreuse, // Just to add the brand splash
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
-                )
+                }
             }
         } else {
             Text(
                 text = "No pending tasks!",
                 style = TextStyle(
-                    color = GlanceTheme.colors.onSurfaceVariant,
+                    color = WhiteFaded,
                     fontSize = 14.sp
                 ),
                 modifier = GlanceModifier.padding(top = 8.dp)

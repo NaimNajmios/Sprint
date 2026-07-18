@@ -102,7 +102,7 @@ androidApp → feature-* → core-data → core-domain
 | **MVP** | **Android-only milestone** | |
 | 8–9 | Sync server + encryption | 🔲 |
 | 10–11 | Windows desktop expansion | 🔲 |
-| 12 | Physical signal tracking (optional) | 🔲 |
+| 12 | Physical signal tracking (Flip-to-pause) | ✅ |
 
 ---
 

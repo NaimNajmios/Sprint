@@ -19,6 +19,9 @@ class TrackingService : Service() {
     @Inject
     lateinit var trackingEngine: TrackingEngine
 
+    @Inject
+    lateinit var physicalSignalTracker: PhysicalSignalTracker
+
     private lateinit var screenStateReceiver: ScreenStateReceiver
 
     override fun onCreate() {
@@ -40,6 +43,7 @@ class TrackingService : Service() {
         
         // Begin tracking
         trackingEngine.startTracking()
+        physicalSignalTracker.startListening()
 
         return START_STICKY
     }
@@ -48,6 +52,7 @@ class TrackingService : Service() {
         super.onDestroy()
         unregisterReceiver(screenStateReceiver)
         trackingEngine.stopTracking()
+        physicalSignalTracker.stopListening()
     }
 
     override fun onBind(intent: Intent?): IBinder? {
