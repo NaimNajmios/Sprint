@@ -334,7 +334,7 @@ fun SessionCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = formatTime(session.startTime),
+                    text = "${formatTime(session.startTime)} • ${context?.name ?: "Unknown"}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
