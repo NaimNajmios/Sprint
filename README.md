@@ -11,7 +11,7 @@
 Sprint fills real gaps in a productivity tracking workflow:
 
 - **Passive tracking** — logs foreground app usage automatically via `UsageStatsManager`, no manual timers
-- **AI classification** — an actor-critic LLM agent pair classifies sessions into contexts (Internship, Coursework, Side Projects, Life) with a rule-based pre-filter for efficiency
+- **AI classification** — an actor-critic LLM agent pair classifies sessions into contexts, bolstered by dynamic OS app filtering and a persistent human-in-the-loop manual feedback system.
 - **Personal Kanban** — task board mirroring real Scrum sprints per context
 - **Weekly retro** — AI-generated weekly insight, fact-checked by a critic agent before display
 - **Multi-device sync** — event-log architecture for phone + desktop convergence (Phase 8+)

@@ -26,6 +26,11 @@ This phase introduces intelligence and data sanitization to the raw `UsageEvents
 *   Implemented `ClassificationWorker.kt`, a Hilt-injected `CoroutineWorker` scheduled by Android `WorkManager`.
 *   Every 6 hours, the Worker retrieves unclassified sessions, runs them through the Actor-Critic pipeline, saves the assigned context, and caches the result into the Rule Table for future deterministic pre-filtering.
 
+### 2.5 Classification Feedback Loop & Quota Protection (Phase 3g)
+*   **AI Retry Loop Terminated:** If the Critic rejects an Actor's classification (or fails), a deterministic `UNCLASSIFIED` rule is saved. This prevents the worker from endlessly retrying the same obscure app and burning through the 50-call daily API quota.
+*   **Dynamic System App Filtering:** The `ClassificationWorker` dynamically checks Android's `ApplicationInfo.FLAG_SYSTEM`. OS-level processes and hidden OEM services are automatically intercepted and marked as `UNCLASSIFIED`, bypassing the LLM entirely.
+*   **Manual Feedback Loop (HITL):** When a user manually corrects a session's context in the UI (`TrackerScreen`), the application instantly generates and saves a `ClassificationRule`. Future background tracking of that app perfectly respects the user's manual assignment.
+
 ## 3. How to Test
 
 ### 3.1 Automated Tests

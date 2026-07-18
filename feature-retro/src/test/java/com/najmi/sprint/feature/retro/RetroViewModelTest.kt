@@ -5,6 +5,7 @@ import com.najmi.sprint.core.domain.model.RetroEntry
 import com.najmi.sprint.core.domain.model.Session
 import com.najmi.sprint.core.domain.model.SessionSource
 import com.najmi.sprint.core.domain.repository.ContextRepository
+import com.najmi.sprint.core.domain.repository.GlobalContextManager
 import com.najmi.sprint.core.domain.repository.RetroRepository
 import com.najmi.sprint.core.domain.repository.SessionRepository
 import io.mockk.coEvery
@@ -33,6 +34,7 @@ class RetroViewModelTest {
     private lateinit var sessionRepository: SessionRepository
     private lateinit var contextRepository: ContextRepository
     private lateinit var retroRepository: RetroRepository
+    private lateinit var globalContextManager: GlobalContextManager
     private lateinit var viewModel: RetroViewModel
 
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -50,9 +52,11 @@ class RetroViewModelTest {
         sessionRepository = mockk(relaxed = true)
         contextRepository = mockk(relaxed = true)
         retroRepository = mockk(relaxed = true)
+        globalContextManager = mockk(relaxed = true)
 
         every { contextRepository.observeActiveContexts() } returns contextsFlow
         every { retroRepository.observeRetros() } returns retrosFlow
+        every { globalContextManager.selectedContextId } returns MutableStateFlow(null)
     }
 
     @After
@@ -65,7 +69,7 @@ class RetroViewModelTest {
         coEvery { sessionRepository.getSessionsBetween(any(), any()) } returns emptyList()
         contextsFlow.value = listOf(workContext, lifeContext)
 
-        viewModel = RetroViewModel(sessionRepository, contextRepository, retroRepository)
+        viewModel = RetroViewModel(sessionRepository, contextRepository, retroRepository, globalContextManager)
 
         // Give the combine + collect time to run
         testDispatcher.scheduler.advanceUntilIdle()
@@ -87,7 +91,7 @@ class RetroViewModelTest {
         coEvery { sessionRepository.getSessionsBetween(any(), any()) } returns sessions
         contextsFlow.value = listOf(workContext, lifeContext)
 
-        viewModel = RetroViewModel(sessionRepository, contextRepository, retroRepository)
+        viewModel = RetroViewModel(sessionRepository, contextRepository, retroRepository, globalContextManager)
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -107,7 +111,7 @@ class RetroViewModelTest {
         coEvery { sessionRepository.getSessionsBetween(any(), any()) } returns sessions
         contextsFlow.value = listOf(workContext, lifeContext)
 
-        viewModel = RetroViewModel(sessionRepository, contextRepository, retroRepository)
+        viewModel = RetroViewModel(sessionRepository, contextRepository, retroRepository, globalContextManager)
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -120,7 +124,7 @@ class RetroViewModelTest {
         coEvery { sessionRepository.getSessionsBetween(any(), any()) } returns emptyList()
         contextsFlow.value = listOf(workContext)
 
-        viewModel = RetroViewModel(sessionRepository, contextRepository, retroRepository)
+        viewModel = RetroViewModel(sessionRepository, contextRepository, retroRepository, globalContextManager)
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -144,7 +148,7 @@ class RetroViewModelTest {
         contextsFlow.value = listOf(workContext)
         retrosFlow.value = listOf(retro)
 
-        viewModel = RetroViewModel(sessionRepository, contextRepository, retroRepository)
+        viewModel = RetroViewModel(sessionRepository, contextRepository, retroRepository, globalContextManager)
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.state.value
