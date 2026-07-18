@@ -852,7 +852,8 @@ fun SessionInspectorSheet(
                 Text(
                     "Save Changes",
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }
