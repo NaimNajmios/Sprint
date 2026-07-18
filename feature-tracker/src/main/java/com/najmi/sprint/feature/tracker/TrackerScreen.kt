@@ -23,6 +23,7 @@ import com.najmi.sprint.core.ui.theme.SurfaceHero
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.window.Dialog
 import androidx.core.graphics.drawable.toBitmap
 import android.content.pm.PackageManager
 import kotlinx.coroutines.Dispatchers
@@ -566,13 +567,99 @@ fun SessionInspectorSheet(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
+        var showSessionsList by remember { mutableStateOf(false) }
+        
+        if (showSessionsList) {
+            Dialog(onDismissRequest = { showSessionsList = false }) {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp)
+                ) {
+                    Column(modifier = Modifier.padding(24.dp)) {
+                        Text(
+                            text = "Batch Sessions",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        LazyColumn(
+                            modifier = Modifier.weight(1f, fill = false),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(sessions.sortedByDescending { it.startTime }) { s ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            formatTime(s.startTime) + " - " + (s.endTime?.let { formatTime(it) } ?: "Now"), 
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            "ID: ${s.id.take(8)}...", 
+                                            style = MaterialTheme.typography.labelSmall, 
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    val durMs = s.endTime?.minus(s.startTime)?.inWholeMilliseconds ?: 0L
+                                    Text(
+                                        if (s.endTime == null) "Active" else formatDuration(durMs),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = if (s.endTime == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(top = 12.dp), 
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { showSessionsList = false },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant, 
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        ) {
+                            Text("Close")
+                        }
+                    }
+                }
+            }
+        }
+
         // Technical IDs
         Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                "BATCH OF ${sessions.size} SESSION(S)",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "BATCH OF ${sessions.size} SESSION(S)",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+                if (sessions.size > 1) {
+                    TextButton(
+                        onClick = { showSessionsList = true },
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text(
+                            "View All",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 "PRIMARY ID: ${primarySession.id}",
