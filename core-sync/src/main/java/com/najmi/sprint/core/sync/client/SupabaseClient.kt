@@ -16,6 +16,14 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import com.najmi.sprint.core.sync.auth.AuthManager
+import com.najmi.sprint.core.sync.auth.AuthResponse
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.providers.bearer
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.call.body
+import io.ktor.http.isSuccess
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -46,13 +54,46 @@ class SupabaseClient @Inject constructor(
             level = LogLevel.INFO
         }
 
+        install(Auth) {
+            bearer {
+                loadTokens {
+                    val access = authManager.getAccessToken()
+                    val refresh = authManager.getRefreshToken()
+                    BearerTokens(access ?: supabaseKey, refresh ?: "")
+                }
+                refreshTokens {
+                    val refresh = authManager.getRefreshToken() ?: return@refreshTokens null
+                    try {
+                        val response = authHttpClient.post("$supabaseUrl/auth/v1/token?grant_type=refresh_token") {
+                            contentType(ContentType.Application.Json)
+                            setBody(mapOf("refresh_token" to refresh))
+                        }
+                        if (response.status.isSuccess()) {
+                            val authData: AuthResponse = response.body()
+                            if (authData.access_token != null && authData.user != null) {
+                                authManager.saveSession(authData.access_token, authData.refresh_token, authData.user.id)
+                                BearerTokens(authData.access_token, authData.refresh_token ?: "")
+                            } else null
+                        } else null
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+                sendWithoutRequest { true }
+            }
+        }
+
         defaultRequest {
             url("$supabaseUrl/rest/v1/")
             contentType(ContentType.Application.Json)
             header("apikey", supabaseKey)
             
-            val token = authManager.getAccessToken() ?: supabaseKey
-            header(HttpHeaders.Authorization, "Bearer $token")
+            // Note: Authorization header is automatically added by Auth plugin.
+            // But we need to add it manually for endpoints that don't trigger auth or for the first request if Auth isn't fully configured
+            // But actually Auth plugin handles it.
+            // Wait, Supabase requires Authorization header for all requests anyway.
+            // Ktor Auth plugin sends Authorization header automatically if BearerTokens are loaded.
+            
             // Prefer single object return instead of array when returning a single inserted row
             header("Prefer", "return=representation")
         }

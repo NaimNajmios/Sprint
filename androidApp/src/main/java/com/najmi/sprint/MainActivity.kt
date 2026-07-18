@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -47,6 +48,12 @@ class MainActivity : ComponentActivity() {
                 val sharedPrefs = getSharedPreferences("sprint_prefs", Context.MODE_PRIVATE)
                 var showOnboarding by mutableStateOf(sharedPrefs.getBoolean("show_onboarding", true))
                 var showAuth by mutableStateOf(!authManager.isLoggedIn())
+
+                LaunchedEffect(hasPermission, showAuth, showOnboarding) {
+                    if (hasPermission && !showAuth && !showOnboarding) {
+                        startTrackingService()
+                    }
+                }
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val modifier = Modifier.padding(innerPadding)

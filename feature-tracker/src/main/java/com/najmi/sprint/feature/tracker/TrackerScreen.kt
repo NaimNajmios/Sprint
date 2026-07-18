@@ -19,6 +19,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.core.graphics.drawable.toBitmap
+import android.content.pm.PackageManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.domain.model.Context
 import com.najmi.sprint.core.domain.model.Project
@@ -204,6 +211,33 @@ fun SessionCard(
 ) {
     val localContext = LocalContext.current
 
+    val pm = localContext.packageManager
+
+    var appName by remember(session.rawLabel) { mutableStateOf(simplifyPackageName(session.rawLabel)) }
+    var appIconBitmap by remember(session.rawLabel) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+
+    LaunchedEffect(session.rawLabel) {
+        withContext(Dispatchers.IO) {
+            try {
+                // If it's the debug build itself, it has ".debug" suffix but we should show "Sprint"
+                val pkgName = session.rawLabel ?: ""
+                val appInfo = pm.getApplicationInfo(pkgName, 0)
+                val label = pm.getApplicationLabel(appInfo).toString()
+                
+                // Get the icon and convert to Bitmap
+                val drawable = pm.getApplicationIcon(appInfo)
+                val bitmap = drawable.toBitmap(width = 144, height = 144).asImageBitmap()
+                
+                withContext(Dispatchers.Main) {
+                    appName = label
+                    appIconBitmap = bitmap
+                }
+            } catch (e: Exception) {
+                // Fallback to simplifyPackageName
+            }
+        }
+    }
+
     // Row anatomy from Daily Ledger spec:
     // Icon (placeholder for now) | Title | Duration | Context-color dot
     // Small corner radius for list rows (8dp)
@@ -229,7 +263,7 @@ fun SessionCard(
                 .padding(vertical = 12.dp, horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // App icon placeholder (Phase 12 / Polish)
+            // App icon
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -237,18 +271,27 @@ fun SessionCard(
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = simplifyPackageName(session.rawLabel).take(1).uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (appIconBitmap != null) {
+                    Image(
+                        bitmap = appIconBitmap!!,
+                        contentDescription = appName,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(
+                        text = appName.take(1).uppercase(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.width(16.dp))
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = simplifyPackageName(session.rawLabel),
+                    text = appName,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -342,6 +385,24 @@ fun SessionInspectorSheet(
         }
     }
 
+    var appName by remember(session.rawLabel) { mutableStateOf(simplifyPackageName(session.rawLabel)) }
+    val pm = LocalContext.current.packageManager
+    
+    LaunchedEffect(session.rawLabel) {
+        withContext(Dispatchers.IO) {
+            try {
+                val pkgName = session.rawLabel ?: ""
+                val appInfo = pm.getApplicationInfo(pkgName, 0)
+                val label = pm.getApplicationLabel(appInfo).toString()
+                withContext(Dispatchers.Main) {
+                    appName = label
+                }
+            } catch (e: Exception) {
+                // Keep simplified name
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -363,7 +424,7 @@ fun SessionInspectorSheet(
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            simplifyPackageName(session.rawLabel),
+            appName,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface

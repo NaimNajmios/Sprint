@@ -43,7 +43,7 @@ class SupabaseAuthService @Inject constructor(
             if (response.status.isSuccess()) {
                 val authData: AuthResponse = response.body()
                 if (authData.access_token != null && authData.user != null) {
-                    authManager.saveSession(authData.access_token, authData.user.id)
+                    authManager.saveSession(authData.access_token, authData.refresh_token, authData.user.id)
                     Result.success(Unit)
                 } else {
                     // This happens when Supabase "Confirm Email" is enabled
@@ -66,7 +66,7 @@ class SupabaseAuthService @Inject constructor(
             if (response.status.isSuccess()) {
                 val authData: AuthResponse = response.body()
                 if (authData.access_token != null && authData.user != null) {
-                    authManager.saveSession(authData.access_token, authData.user.id)
+                    authManager.saveSession(authData.access_token, authData.refresh_token, authData.user.id)
                     Result.success(Unit)
                 } else {
                     Result.failure(Exception("Invalid login credentials"))

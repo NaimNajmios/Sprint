@@ -101,8 +101,9 @@ androidApp → feature-* → core-data → core-domain
 | 7 | Testing, Polish & Design Overhaul | ✅ |
 | **MVP** | **Android-only milestone** | |
 | 8–9 | Sync server + encryption | 🔲 |
-| 10–11 | Windows desktop expansion | 🔲 |
-| 12 | Physical signal tracking (Flip-to-pause) | ✅ |
+| 10 | Monochrome UI & Critical Fixes | ✅ |
+| 11–12 | Windows desktop expansion | 🔲 |
+| 13 | Physical signal tracking (Flip-to-pause) | ✅ |
 
 ---
 
