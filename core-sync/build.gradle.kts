@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.jetbrains.kotlin.android)
@@ -5,7 +7,9 @@ plugins {
     alias(libs.plugins.detekt)
 }
 
-import java.util.Properties
+detekt {
+    config.setFrom(rootProject.file("detekt.yml"))
+}
 
 val properties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")

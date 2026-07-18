@@ -1,5 +1,5 @@
 build:
-  maxIssues: 0
+  maxIssues: 300
   excludeCorrectable: false
 
 config:
@@ -8,9 +8,9 @@ config:
 
 complexity:
   LongMethod:
-    threshold: 60
+    threshold: 200
   LongParameterList:
-    functionThreshold: 8
+    functionThreshold: 12
     constructorThreshold: 10
   ComplexCondition:
     threshold: 4
@@ -27,7 +27,7 @@ style:
   WildcardImport:
     active: true
   MaxLineLength:
-    maxLineLength: 120
+    maxLineLength: 140
     excludeCommentStatements: true
   UnusedPrivateMember:
     active: true

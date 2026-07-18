@@ -9,6 +9,10 @@ plugins {
     alias(libs.plugins.detekt)
 }
 
+detekt {
+    config.setFrom(rootProject.file("detekt.yml"))
+}
+
 android {
     namespace = "com.najmi.sprint.core.ai"
     compileSdk = 36
