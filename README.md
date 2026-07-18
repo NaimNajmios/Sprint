@@ -104,8 +104,9 @@ androidApp → feature-* → core-data → core-domain
 | 10 | Monochrome UI & Critical Fixes | ✅ |
 | 11 | Ignored Package Management | ✅ |
 | 12 | UI Consistency & Supabase Sync Fix | ✅ |
-| 13 | Windows desktop expansion | 🔲 |
-| 14 | Physical signal tracking (Flip-to-pause) | ✅ |
+| 13 | Project Tools (Secrets, GitHub, Docs) | ✅ |
+| 14 | Windows desktop expansion | 🔲 |
+| 15 | Physical signal tracking (Flip-to-pause) | ✅ |
 
 ---
 

@@ -21,9 +21,12 @@ import com.najmi.sprint.core.data.local.entity.TaskEntity
         SessionEntity::class,
         TaskEntity::class,
         RetroEntryEntity::class,
-        com.najmi.sprint.core.data.local.entity.ClassificationRuleEntity::class
+        com.najmi.sprint.core.data.local.entity.ClassificationRuleEntity::class,
+        com.najmi.sprint.core.data.local.entity.GithubIssueCacheEntity::class,
+        com.najmi.sprint.core.data.local.entity.GithubCommitCacheEntity::class,
+        com.najmi.sprint.core.data.local.entity.ProjectDocumentEntity::class
     ],
-    version = 2,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -35,6 +38,28 @@ abstract class SprintDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE classification_rules ADD COLUMN isIgnored INTEGER NOT NULL DEFAULT 0")
             }
         }
+
+        val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE projects ADD COLUMN githubOwner TEXT")
+                db.execSQL("ALTER TABLE projects ADD COLUMN githubRepo TEXT")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN githubIssueNumber INTEGER")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN githubIssueUrl TEXT")
+            }
+        }
+
+        val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `github_issues_cache` (`id` TEXT NOT NULL, `projectId` TEXT NOT NULL, `issueNumber` INTEGER NOT NULL, `title` TEXT NOT NULL, `state` TEXT NOT NULL, `htmlUrl` TEXT NOT NULL, PRIMARY KEY(`id`))")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `github_commits_cache` (`sha` TEXT NOT NULL, `projectId` TEXT NOT NULL, `message` TEXT NOT NULL, `htmlUrl` TEXT NOT NULL, PRIMARY KEY(`sha`))")
+            }
+        }
+
+        val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `project_documents` (`id` TEXT NOT NULL, `projectId` TEXT NOT NULL, `uri` TEXT NOT NULL, `title` TEXT NOT NULL, `lastOpenedAt` INTEGER, PRIMARY KEY(`id`))")
+            }
+        }
     }
 
     abstract fun contextDao(): ContextDao
@@ -43,4 +68,6 @@ abstract class SprintDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
     abstract fun retroDao(): RetroDao
     abstract fun ruleDao(): com.najmi.sprint.core.data.local.dao.RuleDao
+    abstract fun githubCacheDao(): com.najmi.sprint.core.data.local.dao.GithubCacheDao
+    abstract fun projectDocumentDao(): com.najmi.sprint.core.data.local.dao.ProjectDocumentDao
 }

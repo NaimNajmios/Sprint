@@ -74,5 +74,15 @@ class SprintApplication : Application(), Configuration.Provider {
             ExistingPeriodicWorkPolicy.KEEP,
             retroRequest
         )
+
+        // 4. GitHub Sync Worker (Every 1 hour)
+        val githubRequest = PeriodicWorkRequestBuilder<com.najmi.sprint.tracking.GithubSyncWorker>(1, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
+        workManager.enqueueUniquePeriodicWork(
+            "GithubSyncWorkerPeriodic",
+            ExistingPeriodicWorkPolicy.KEEP,
+            githubRequest
+        )
     }
 }

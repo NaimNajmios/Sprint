@@ -14,5 +14,7 @@ data class Project(
     val id: String,
     val contextId: String,
     val name: String,
-    val colorHex: String? = null  // inherits context color if null
+    val colorHex: String? = null,  // inherits context color if null
+    val githubOwner: String? = null,
+    val githubRepo: String? = null
 )

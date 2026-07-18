@@ -9,6 +9,7 @@ import com.najmi.sprint.core.data.local.entity.toDomain
 import com.najmi.sprint.core.data.local.entity.toEntity
 import com.najmi.sprint.core.domain.model.Context
 import com.najmi.sprint.core.domain.model.Project
+import com.najmi.sprint.core.domain.model.ProjectDocument
 import com.najmi.sprint.core.domain.model.RetroEntry
 import com.najmi.sprint.core.domain.model.Session
 import com.najmi.sprint.core.domain.model.Task
@@ -59,6 +60,9 @@ class RoomContextRepository @Inject constructor(
 class RoomProjectRepository @Inject constructor(
     private val dao: ProjectDao
 ) : ProjectRepository {
+    override fun observeAllProjects(): Flow<List<Project>> =
+        dao.observeAllProjects().map { list -> list.map { it.toDomain() } }
+
     override fun observeProjectsByContext(contextId: String): Flow<List<Project>> =
         dao.observeProjectsByContext(contextId).map { list -> list.map { it.toDomain() } }
 
@@ -200,5 +204,24 @@ class RoomRuleRepository @Inject constructor(
                 isIgnored = isIgnored
             ))
         }
+    }
+}
+
+class RoomProjectDocumentRepository @Inject constructor(
+    private val dao: com.najmi.sprint.core.data.local.dao.ProjectDocumentDao
+) : com.najmi.sprint.core.domain.repository.ProjectDocumentRepository {
+    override fun observeDocumentsForProject(projectId: String): Flow<List<ProjectDocument>> =
+        dao.observeDocumentsForProject(projectId).map { list -> list.map { it.toDomain() } }
+
+    override suspend fun insertDocument(document: ProjectDocument) {
+        dao.insertDocument(document.toEntity())
+    }
+
+    override suspend fun updateDocument(document: ProjectDocument) {
+        dao.updateDocument(document.toEntity())
+    }
+
+    override suspend fun deleteDocument(id: String) {
+        dao.deleteDocument(id)
     }
 }

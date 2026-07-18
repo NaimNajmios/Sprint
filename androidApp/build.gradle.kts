@@ -78,6 +78,7 @@ dependencies {
     implementation(project(":core-ui"))
     implementation(project(":core-data"))
     implementation(project(":core-sync"))
+    implementation(project(":core-security"))
     implementation(project(":core-ai"))
     implementation(project(":feature-tracker"))
     implementation(project(":feature-kanban"))

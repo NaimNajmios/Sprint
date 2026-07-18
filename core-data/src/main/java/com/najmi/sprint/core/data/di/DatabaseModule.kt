@@ -57,7 +57,7 @@ object DatabaseModule {
             SprintDatabase::class.java,
             "sprint.db"
         )
-        .addMigrations(SprintDatabase.MIGRATION_1_2)
+        .addMigrations(SprintDatabase.MIGRATION_1_2, SprintDatabase.MIGRATION_2_3, SprintDatabase.MIGRATION_3_4, SprintDatabase.MIGRATION_4_5)
         .addCallback(SprintDatabaseCallback(provider, applicationScope))
         .build()
     }
@@ -79,6 +79,12 @@ object DatabaseModule {
 
     @Provides
     fun provideRuleDao(database: SprintDatabase): com.najmi.sprint.core.data.local.dao.RuleDao = database.ruleDao()
+
+    @Provides
+    fun provideGithubCacheDao(database: SprintDatabase): com.najmi.sprint.core.data.local.dao.GithubCacheDao = database.githubCacheDao()
+
+    @Provides
+    fun provideProjectDocumentDao(database: SprintDatabase): com.najmi.sprint.core.data.local.dao.ProjectDocumentDao = database.projectDocumentDao()
 }
 
 class SprintDatabaseCallback(
@@ -143,4 +149,10 @@ abstract class RepositoryModule {
     abstract fun bindGlobalContextManager(
         impl: GlobalContextManagerImpl
     ): GlobalContextManager
+
+    @Binds
+    @Singleton
+    abstract fun bindProjectDocumentRepository(
+        impl: com.najmi.sprint.core.data.repository.RoomProjectDocumentRepository
+    ): com.najmi.sprint.core.domain.repository.ProjectDocumentRepository
 }

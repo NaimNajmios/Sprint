@@ -41,6 +41,9 @@ interface ContextDao {
 
 @Dao
 interface ProjectDao {
+    @Query("SELECT * FROM projects")
+    fun observeAllProjects(): Flow<List<ProjectEntity>>
+
     @Query("SELECT * FROM projects WHERE contextId = :contextId")
     fun observeProjectsByContext(contextId: String): Flow<List<ProjectEntity>>
 
@@ -55,6 +58,21 @@ interface ProjectDao {
 
     @Query("DELETE FROM projects WHERE id = :id")
     suspend fun deleteProject(id: String)
+}
+
+@Dao
+interface ProjectDocumentDao {
+    @Query("SELECT * FROM project_documents WHERE projectId = :projectId ORDER BY lastOpenedAt DESC")
+    fun observeDocumentsForProject(projectId: String): Flow<List<ProjectDocumentEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertDocument(document: ProjectDocumentEntity)
+
+    @Update
+    suspend fun updateDocument(document: ProjectDocumentEntity)
+
+    @Query("DELETE FROM project_documents WHERE id = :id")
+    suspend fun deleteDocument(id: String)
 }
 
 @Dao

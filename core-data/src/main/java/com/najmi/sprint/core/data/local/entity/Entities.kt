@@ -9,6 +9,7 @@ import com.najmi.sprint.core.domain.model.Session
 import com.najmi.sprint.core.domain.model.SessionSource
 import com.najmi.sprint.core.domain.model.Task
 import com.najmi.sprint.core.domain.model.TaskStatus
+import com.najmi.sprint.core.domain.model.ProjectDocument
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 
@@ -28,11 +29,13 @@ data class ProjectEntity(
     @PrimaryKey val id: String,
     val contextId: String,
     val name: String,
-    val colorHex: String?
+    val colorHex: String?,
+    val githubOwner: String?,
+    val githubRepo: String?
 )
 
-fun ProjectEntity.toDomain() = Project(id, contextId, name, colorHex)
-fun Project.toEntity() = ProjectEntity(id, contextId, name, colorHex)
+fun ProjectEntity.toDomain() = Project(id, contextId, name, colorHex, githubOwner, githubRepo)
+fun Project.toEntity() = ProjectEntity(id, contextId, name, colorHex, githubOwner, githubRepo)
 
 @Entity(tableName = "sessions")
 data class SessionEntity(
@@ -65,14 +68,16 @@ data class TaskEntity(
     val estimatePoints: Int?,
     val createdAt: Instant,
     val updatedAt: Instant,
-    val deviceId: String
+    val deviceId: String,
+    val githubIssueNumber: Int?,
+    val githubIssueUrl: String?
 )
 
 fun TaskEntity.toDomain() = Task(
-    id, contextId, projectId, title, status, estimatePoints, createdAt, updatedAt, deviceId
+    id, contextId, projectId, title, status, estimatePoints, createdAt, updatedAt, deviceId, githubIssueNumber, githubIssueUrl
 )
 fun Task.toEntity() = TaskEntity(
-    id, contextId, projectId, title, status, estimatePoints, createdAt, updatedAt, deviceId
+    id, contextId, projectId, title, status, estimatePoints, createdAt, updatedAt, deviceId, githubIssueNumber, githubIssueUrl
 )
 
 @Entity(tableName = "retros")
@@ -92,3 +97,33 @@ fun RetroEntryEntity.toDomain() = RetroEntry(
 fun RetroEntry.toEntity() = RetroEntryEntity(
     id, weekOf, summaryText, flaggedContextId, generatedByModel, promptVersion, criticApproved
 )
+
+@Entity(tableName = "github_issues_cache")
+data class GithubIssueCacheEntity(
+    @PrimaryKey val id: String, // project_id + issue_number
+    val projectId: String,
+    val issueNumber: Int,
+    val title: String,
+    val state: String,
+    val htmlUrl: String
+)
+
+@Entity(tableName = "github_commits_cache")
+data class GithubCommitCacheEntity(
+    @PrimaryKey val sha: String,
+    val projectId: String,
+    val message: String,
+    val htmlUrl: String
+)
+
+@Entity(tableName = "project_documents")
+data class ProjectDocumentEntity(
+    @PrimaryKey val id: String,
+    val projectId: String,
+    val uri: String,
+    val title: String,
+    val lastOpenedAt: Instant?
+)
+
+fun ProjectDocumentEntity.toDomain() = ProjectDocument(id, projectId, uri, title, lastOpenedAt)
+fun ProjectDocument.toEntity() = ProjectDocumentEntity(id, projectId, uri, title, lastOpenedAt)

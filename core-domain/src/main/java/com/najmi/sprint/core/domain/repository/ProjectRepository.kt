@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
  * Repository interface for [Project] operations.
  */
 interface ProjectRepository {
+    fun observeAllProjects(): Flow<List<Project>>
     fun observeProjectsByContext(contextId: String): Flow<List<Project>>
     suspend fun getProjectById(id: String): Project?
     suspend fun insertProject(project: Project)

@@ -30,5 +30,7 @@ data class Task(
     val estimatePoints: Int? = null,
     val createdAt: Instant,
     val updatedAt: Instant,
-    val deviceId: String
+    val deviceId: String,
+    val githubIssueNumber: Int? = null,
+    val githubIssueUrl: String? = null
 )
