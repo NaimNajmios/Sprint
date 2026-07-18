@@ -8,6 +8,7 @@ import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.request.header
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,6 +24,7 @@ class SupabaseApiService @Inject constructor(
     suspend fun upsertContexts(contexts: List<ContextDto>) {
         if (contexts.isEmpty()) return
         client.httpClient.post("contexts") {
+            header("Prefer", "return=representation,resolution=merge-duplicates")
             url { parameters.append("on_conflict", "id") }
             setBody(contexts)
         }
@@ -36,6 +38,7 @@ class SupabaseApiService @Inject constructor(
     suspend fun upsertTasks(tasks: List<TaskDto>) {
         if (tasks.isEmpty()) return
         client.httpClient.post("tasks") {
+            header("Prefer", "return=representation,resolution=merge-duplicates")
             url { parameters.append("on_conflict", "id") }
             setBody(tasks)
         }
@@ -49,6 +52,7 @@ class SupabaseApiService @Inject constructor(
     suspend fun upsertSessions(sessions: List<SessionDto>) {
         if (sessions.isEmpty()) return
         client.httpClient.post("sessions") {
+            header("Prefer", "return=representation,resolution=merge-duplicates")
             url { parameters.append("on_conflict", "id") }
             setBody(sessions)
         }
@@ -62,6 +66,7 @@ class SupabaseApiService @Inject constructor(
     suspend fun upsertRetroEntries(entries: List<RetroEntryDto>) {
         if (entries.isEmpty()) return
         client.httpClient.post("retro_entries") {
+            header("Prefer", "return=representation,resolution=merge-duplicates")
             url { parameters.append("on_conflict", "id") }
             setBody(entries)
         }
