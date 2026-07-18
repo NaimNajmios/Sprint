@@ -19,6 +19,7 @@ class TrackingEngineTest {
     private lateinit var sessionRepository: SessionRepository
     private lateinit var ruleRepository: com.najmi.sprint.core.domain.repository.RuleRepository
     private lateinit var usageStatsTracker: UsageStatsTracker
+    private lateinit var mockContext: android.content.Context
     private lateinit var engine: TrackingEngine
 
     @Before
@@ -26,7 +27,8 @@ class TrackingEngineTest {
         sessionRepository = mockk(relaxed = true)
         ruleRepository = mockk(relaxed = true)
         usageStatsTracker = mockk(relaxed = true)
-        engine = TrackingEngine(sessionRepository, ruleRepository, usageStatsTracker)
+        mockContext = mockk(relaxed = true)
+        engine = TrackingEngine(sessionRepository, ruleRepository, usageStatsTracker, mockContext)
     }
 
     @Test
@@ -103,9 +105,9 @@ class TrackingEngineTest {
     }
 
     @Test
-    fun `pollAndUpdate debounces sessions under 10 seconds`() = runBlocking {
+    fun `pollAndUpdate debounces sessions under 30 seconds`() = runBlocking {
         val time1 = System.currentTimeMillis()
-        val time2 = time1 + 5_000 // 5 seconds later (under 10s debounce threshold)
+        val time2 = time1 + 20_000 // 20 seconds later (under 30s debounce threshold)
 
         // First app
         coEvery { usageStatsTracker.pollRecentForegroundApp() } returns UsageStatsTracker.ForegroundEvent("com.test.app1", time1)
@@ -159,5 +161,53 @@ class TrackingEngineTest {
         val reopenedSession = updateSlot.captured
         assertEquals("old-session", reopenedSession.id)
         assertNull(reopenedSession.endTime) // endTime cleared to reopen it
+    }
+
+    @Test
+    fun `pollAndUpdate ignores system packages completely`() = runBlocking {
+        val time1 = System.currentTimeMillis()
+        val time2 = time1 + 5_000
+
+        // Start tracking a real app
+        coEvery { usageStatsTracker.pollRecentForegroundApp() } returns UsageStatsTracker.ForegroundEvent("com.test.game", time1)
+        engine.pollAndUpdate()
+
+        val sessionSlot = slot<Session>()
+        coVerify(exactly = 1) { sessionRepository.insertSession(capture(sessionSlot)) }
+        val gameSession = sessionSlot.captured
+
+        // System UI blip appears — should be completely ignored
+        coEvery { usageStatsTracker.pollRecentForegroundApp() } returns UsageStatsTracker.ForegroundEvent("com.android.systemui", time2)
+        engine.pollAndUpdate()
+
+        // No close, no insert, no update — the game session is undisturbed
+        coVerify(exactly = 0) { sessionRepository.updateSession(any()) }
+        coVerify(exactly = 1) { sessionRepository.insertSession(any()) } // Still only the game
+    }
+
+    @Test
+    fun `ignored package does not break merge chain`() = runBlocking {
+        val time1 = System.currentTimeMillis()
+        val time2 = time1 + 2_000
+        val time3 = time1 + 60_000
+
+        // Start tracking a real app
+        coEvery { usageStatsTracker.pollRecentForegroundApp() } returns UsageStatsTracker.ForegroundEvent("com.test.game", time1)
+        engine.pollAndUpdate()
+
+        val sessionSlot = slot<Session>()
+        coVerify(exactly = 1) { sessionRepository.insertSession(capture(sessionSlot)) }
+
+        // System UI blip — should be ignored, game session stays active
+        coEvery { usageStatsTracker.pollRecentForegroundApp() } returns UsageStatsTracker.ForegroundEvent("com.android.launcher3", time2)
+        engine.pollAndUpdate()
+
+        // Same game detected again — should remain on the same session, not try to merge
+        coEvery { usageStatsTracker.pollRecentForegroundApp() } returns UsageStatsTracker.ForegroundEvent("com.test.game", time3)
+        engine.pollAndUpdate()
+
+        // Game was never closed, so detecting it again is a no-op (same package check)
+        coVerify(exactly = 0) { sessionRepository.updateSession(any()) }
+        coVerify(exactly = 1) { sessionRepository.insertSession(any()) }
     }
 }

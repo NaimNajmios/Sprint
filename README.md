@@ -92,13 +92,13 @@ androidApp → feature-* → core-data → core-domain
 | Phase | Focus | Status |
 |---|---|---|
 | 0 | Foundation — repo, modules, CI | ✅ |
-| 1 | Core domain & local data | 🔲 |
-| 2 | Android automatic tracking | 🔲 |
-| 3 | Classification engine | 🔲 |
-| 4 | Kanban & manual tasks | 🔲 |
-| 5 | Weekly retro | 🔲 |
-| 6 | Widget & glanceable UX | 🔲 |
-| 7 | Testing & polish | 🔲 |
+| 1 | Core domain & local data | ✅ |
+| 2 | Android automatic tracking | ✅ |
+| 3 | Classification engine (actor-critic AI) | ✅ |
+| 4 | Kanban & manual tasks | ✅ |
+| 5 | Weekly retro | ✅ |
+| 6 | Widget & glanceable UX | ✅ |
+| 7 | Testing & polish | 🔨 In Progress |
 | **MVP** | **Android-only milestone** | |
 | 8–9 | Sync server + encryption | 🔲 |
 | 10–11 | Windows desktop expansion | 🔲 |
@@ -108,9 +108,9 @@ androidApp → feature-* → core-data → core-domain
 
 ## Known Limitations
 
-- Single-device only (no sync yet)
-- Classification engine not implemented — manual context assignment for now
-- No widget yet
+- Single-device only (sync architecture designed but not yet deployed)
+- AI classification works but is not yet rate-limit-hardened (no backoff/daily cap)
+- Review queue for low-confidence classifications not yet built
 - Desktop target not yet added to the KMP project
 
 ---

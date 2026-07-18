@@ -3,7 +3,9 @@ package com.najmi.sprint.feature.tracker
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,6 +30,8 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -255,19 +259,31 @@ fun TimeDistributionChart(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SessionCard(
     session: Session, 
     context: Context?,
     onClick: () -> Unit = {}
 ) {
+    val localContext = LocalContext.current
+
     // Alexandria: No hard borders. Use tonal surface shifts.
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    Toast.makeText(
+                        localContext,
+                        session.rawLabel,
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            ),
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        onClick = onClick
     ) {
         Row(
             modifier = Modifier
@@ -338,7 +354,12 @@ private fun formatDuration(ms: Long): String {
     val totalSecs = ms / 1000
     val h = totalSecs / 3600
     val m = (totalSecs % 3600) / 60
-    return if (h > 0) "${h}h ${m}m" else "${m}m"
+    val s = totalSecs % 60
+    return when {
+        h > 0 -> "${h}h ${m}m"
+        m > 0 -> "${m}m"
+        else -> "${s}s"
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -392,6 +413,12 @@ fun SessionInspectorSheet(
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
+        )
+        // A3: Show full package name for debugging
+        Text(
+            session.rawLabel,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
         
         Spacer(modifier = Modifier.height(20.dp))
