@@ -7,7 +7,7 @@
 
     <!-- Foreground glyph: abstracted wave/sparkline -->
     <path
-        android:strokeColor="#C8FF00"
+        android:strokeColor="#FFFFFF"
         android:strokeWidth="5.5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
@@ -15,10 +15,10 @@
 
     <!-- Highlighted data point dot -->
     <path
-        android:fillColor="#C8FF00"
+        android:fillColor="#FFFFFF"
         android:pathData="M 33,44 a 5,5 0 1,0 10,0 a 5,5 0 1,0 -10,0" />
     <path
-        android:strokeColor="#161A2C"
+        android:strokeColor="#000000"
         android:strokeWidth="1.5"
         android:pathData="M 33,44 a 5,5 0 1,0 10,0 a 5,5 0 1,0 -10,0" />
 
