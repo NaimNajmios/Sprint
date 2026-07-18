@@ -34,6 +34,8 @@ class SessionClassifier @Inject constructor(
      */
     suspend fun actorClassify(
         packageName: String,
+        appName: String?,
+        category: String?,
         activeContexts: List<Context>
     ): ActorClassificationResponse? {
         val contextsJson = activeContexts.joinToString("\n") { "- ID: \${it.id}, Name: \${it.name}" }
@@ -49,8 +51,14 @@ class SessionClassifier @Inject constructor(
             Respond strictly in JSON with "contextId" (string) and "confidence" (float 0.0 to 1.0).
         """.trimIndent()
         
+        val appInfoStr = buildString {
+            append("Package name: $packageName\n")
+            if (appName != null) append("App Name: $appName\n")
+            if (category != null && category != "Unknown") append("OS Category: $category\n")
+        }
+        
         val result = groqClient.generateCompletion(
-            prompt = "Package name: $packageName",
+            prompt = appInfoStr.trim(),
             systemPrompt = systemPrompt,
             jsonMode = true
         )
@@ -69,6 +77,8 @@ class SessionClassifier @Inject constructor(
      */
     suspend fun criticReview(
         packageName: String,
+        appName: String?,
+        category: String?,
         actorResponse: ActorClassificationResponse,
         activeContexts: List<Context>
     ): CriticReviewResponse? {
@@ -76,7 +86,7 @@ class SessionClassifier @Inject constructor(
         
         val systemPrompt = """
             You are a Critic AI reviewing an app classification.
-            The Actor classified "$packageName" as Context ID "${actorResponse.contextId}" with confidence ${actorResponse.confidence}.
+            The Actor classified "$packageName" (App: ${appName ?: "Unknown"}, Category: ${category ?: "Unknown"}) as Context ID "${actorResponse.contextId}" with confidence ${actorResponse.confidence}.
             
             Available Contexts:
             $contextsJson

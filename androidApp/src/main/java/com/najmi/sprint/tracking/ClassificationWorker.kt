@@ -28,6 +28,29 @@ class ClassificationWorker @AssistedInject constructor(
     private val sessionClassifier: SessionClassifier
 ) : CoroutineWorker(appContext, workerParams) {
 
+    private fun getAppMetadata(packageName: String): Pair<String, String>? {
+        return try {
+            val pm = applicationContext.packageManager
+            val appInfo = pm.getApplicationInfo(packageName, 0)
+            val appName = pm.getApplicationLabel(appInfo).toString()
+            
+            val categoryStr = when (appInfo.category) {
+                android.content.pm.ApplicationInfo.CATEGORY_GAME -> "Game"
+                android.content.pm.ApplicationInfo.CATEGORY_AUDIO -> "Audio"
+                android.content.pm.ApplicationInfo.CATEGORY_VIDEO -> "Video"
+                android.content.pm.ApplicationInfo.CATEGORY_IMAGE -> "Image"
+                android.content.pm.ApplicationInfo.CATEGORY_SOCIAL -> "Social"
+                android.content.pm.ApplicationInfo.CATEGORY_NEWS -> "News"
+                android.content.pm.ApplicationInfo.CATEGORY_MAPS -> "Maps"
+                android.content.pm.ApplicationInfo.CATEGORY_PRODUCTIVITY -> "Productivity"
+                else -> "Unknown"
+            }
+            Pair(appName, categoryStr)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     override suspend fun doWork(): Result {
         return try {
             val activeContexts = contextRepository.observeActiveContexts().first()
@@ -59,14 +82,62 @@ class ClassificationWorker @AssistedInject constructor(
                     continue
                 }
 
-                // 2. Escalate to Actor-Critic
+                // 1.5. Stage 1: PackageManager Local Classification
+                val metadata = getAppMetadata(session.rawLabel)
+                val appName = metadata?.first
+                val categoryStr = metadata?.second
+                
+                var localMatchId: String? = null
+                if (metadata != null) {
+                    for (ctx in activeContexts) {
+                        val nameLower = ctx.name.lowercase()
+                        val catLower = categoryStr!!.lowercase()
+                        // E.g., if category is "Game" and context is "Gaming"
+                        if (catLower != "unknown" && nameLower.contains(catLower)) {
+                            localMatchId = ctx.id
+                            break
+                        }
+                        // E.g., if app name is "WhatsApp" and context is "WhatsApp"
+                        if (nameLower.contains(appName!!.lowercase())) {
+                            localMatchId = ctx.id
+                            break
+                        }
+                    }
+                }
+                
+                if (localMatchId != null) {
+                    AppLogger.d("ClassificationWorker", "Stage 1 Local Match: ${session.rawLabel} -> $localMatchId")
+                    sessionRepository.updateSession(
+                        session.copy(
+                            contextId = localMatchId,
+                            classificationConfidence = 1.0f // Local deterministic match
+                        )
+                    )
+                    ruleRepository.insertOrUpdateRule(
+                        ClassificationRule(
+                            packageName = session.rawLabel,
+                            contextId = localMatchId,
+                            lastConfirmedAt = Clock.System.now()
+                        )
+                    )
+                    continue
+                }
+
+                // 2. Stage 2: Escalate to Actor-Critic
                 // Add delay to avoid aggressive burst rate limits
                 delay(2000)
-                val actorPrediction = sessionClassifier.actorClassify(session.rawLabel, activeContexts) ?: continue
+                val actorPrediction = sessionClassifier.actorClassify(
+                    packageName = session.rawLabel, 
+                    appName = appName,
+                    category = categoryStr,
+                    activeContexts = activeContexts
+                ) ?: continue
                 
                 delay(1000)
                 val criticValidation = sessionClassifier.criticReview(
                     packageName = session.rawLabel,
+                    appName = appName,
+                    category = categoryStr,
                     actorResponse = actorPrediction,
                     activeContexts = activeContexts
                 ) ?: continue
