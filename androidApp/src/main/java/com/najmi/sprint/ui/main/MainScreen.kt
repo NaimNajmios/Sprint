@@ -60,8 +60,13 @@ fun MainScreen(
                     )
                 },
                 actions = {
-                    Box {
-                        Surface(
+                    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+                    val isSettingsRelated = currentRoute == "settings" || currentRoute == "debug_console" || 
+                                            currentRoute == "context_manager" || currentRoute?.startsWith("project_manager") == true
+                    
+                    if (!isSettingsRelated) {
+                        Box {
+                            Surface(
                             onClick = { dropdownExpanded = true },
                             shape = CircleShape,
                             color = Color.White.copy(alpha = 0.1f),
@@ -129,6 +134,7 @@ fun MainScreen(
                             }
                         }
                     }
+                }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = SurfaceHero,

@@ -44,7 +44,7 @@ fun TrackerScreen(
     viewModel: TrackerViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    var selectedSession by remember { mutableStateOf<Session?>(null) }
+    var selectedSessionGroup by remember { mutableStateOf<List<Session>?>(null) }
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
 
@@ -155,17 +155,24 @@ fun TrackerScreen(
                         )
                     }
                 } else {
+                    val groupedSessions = displaySessions.groupBy { it.rawLabel }.values.toList()
+                    
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding = PaddingValues(bottom = 80.dp)
                     ) {
-                        items(displaySessions, key = { it.id }) { session ->
-                            val context = state.contexts.find { it.id == session.contextId }
+                        items(groupedSessions, key = { it.first().rawLabel }) { group ->
+                            val latestSession = group.maxByOrNull { it.startTime } ?: return@items
+                            val totalDuration = group.sumOf { it.endTime?.minus(it.startTime)?.inWholeMilliseconds ?: 0L }
+                            val isActive = group.any { it.endTime == null }
+                            val context = state.contexts.find { it.id == latestSession.contextId }
+                            
                             SessionCard(
-                                session = session,
+                                session = latestSession,
                                 context = context,
+                                overrideDurationMs = if (isActive) null else totalDuration,
                                 onClick = {
-                                    selectedSession = session
+                                    selectedSessionGroup = group
                                     scope.launch { sheetState.show() }
                                 }
                             )
@@ -176,12 +183,12 @@ fun TrackerScreen(
         }
     }
 
-    if (selectedSession != null) {
+    if (selectedSessionGroup != null) {
         ModalBottomSheet(
             onDismissRequest = {
                 scope.launch { sheetState.hide() }.invokeOnCompletion {
                     if (!sheetState.isVisible) {
-                        selectedSession = null
+                        selectedSessionGroup = null
                     }
                 }
             },
@@ -189,12 +196,12 @@ fun TrackerScreen(
             containerColor = MaterialTheme.colorScheme.surface
         ) {
             SessionInspectorSheet(
-                session = selectedSession!!,
+                sessions = selectedSessionGroup!!,
                 availableContexts = state.contexts,
                 viewModel = viewModel,
                 onClose = {
                     scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        selectedSession = null
+                        selectedSessionGroup = null
                     }
                 }
             )
@@ -207,6 +214,7 @@ fun TrackerScreen(
 fun SessionCard(
     session: Session, 
     context: Context?,
+    overrideDurationMs: Long? = null,
     onClick: () -> Unit = {}
 ) {
     val localContext = LocalContext.current
@@ -303,11 +311,11 @@ fun SessionCard(
                 )
             }
             
-            val duration = session.endTime?.minus(session.startTime)?.inWholeMilliseconds ?: 0L
+            val duration = overrideDurationMs ?: (session.endTime?.minus(session.startTime)?.inWholeMilliseconds ?: 0L)
             Text(
-                text = formatDuration(duration),
+                text = if (overrideDurationMs == null && session.endTime == null) "Active" else formatDuration(duration),
                 style = MaterialTheme.typography.labelMedium, // Plex Mono Data role
-                color = MaterialTheme.colorScheme.onSurface
+                color = if (overrideDurationMs == null && session.endTime == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
             
             Spacer(modifier = Modifier.width(12.dp))
@@ -362,13 +370,15 @@ private fun formatHeroDuration(ms: Long): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionInspectorSheet(
-    session: Session,
+    sessions: List<Session>,
     availableContexts: List<Context>,
     viewModel: TrackerViewModel,
     onClose: () -> Unit
 ) {
-    var selectedContextId by remember { mutableStateOf(session.contextId) }
-    var selectedProjectId by remember { mutableStateOf(session.projectId) }
+    val primarySession = sessions.maxByOrNull { it.startTime } ?: return
+    
+    var selectedContextId by remember { mutableStateOf(primarySession.contextId) }
+    var selectedProjectId by remember { mutableStateOf(primarySession.projectId) }
     var projectsForContext by remember { mutableStateOf<List<Project>>(emptyList()) }
     var isContextDropdownExpanded by remember { mutableStateOf(false) }
     var isProjectDropdownExpanded by remember { mutableStateOf(false) }
@@ -385,13 +395,13 @@ fun SessionInspectorSheet(
         }
     }
 
-    var appName by remember(session.rawLabel) { mutableStateOf(simplifyPackageName(session.rawLabel)) }
+    var appName by remember(primarySession.rawLabel) { mutableStateOf(simplifyPackageName(primarySession.rawLabel)) }
     val pm = LocalContext.current.packageManager
     
-    LaunchedEffect(session.rawLabel) {
+    LaunchedEffect(primarySession.rawLabel) {
         withContext(Dispatchers.IO) {
             try {
-                val pkgName = session.rawLabel ?: ""
+                val pkgName = primarySession.rawLabel ?: ""
                 val appInfo = pm.getApplicationInfo(pkgName, 0)
                 val label = pm.getApplicationLabel(appInfo).toString()
                 withContext(Dispatchers.Main) {
@@ -431,7 +441,7 @@ fun SessionInspectorSheet(
         )
         // A3: Show full package name for debugging
         Text(
-            session.rawLabel,
+            primarySession.rawLabel,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
@@ -448,7 +458,7 @@ fun SessionInspectorSheet(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    formatTime(session.startTime),
+                    formatTime(primarySession.startTime),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -461,9 +471,9 @@ fun SessionInspectorSheet(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    session.endTime?.let { formatTime(it) } ?: "Active",
+                    primarySession.endTime?.let { formatTime(it) } ?: "Active",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (session.endTime == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    color = if (primarySession.endTime == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -479,9 +489,10 @@ fun SessionInspectorSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                val durationMs = session.endTime?.minus(session.startTime)?.inWholeMilliseconds ?: 0L
+                val totalDurationMs = sessions.sumOf { it.endTime?.minus(it.startTime)?.inWholeMilliseconds ?: 0L }
+                val isActive = sessions.any { it.endTime == null }
                 Text(
-                    if (session.endTime == null) "Active" else formatDuration(durationMs),
+                    if (isActive) "Active" else formatDuration(totalDurationMs),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -494,7 +505,7 @@ fun SessionInspectorSheet(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    session.source.name.replace("_", " "),
+                    primarySession.source.name.replace("_", " "),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -504,7 +515,7 @@ fun SessionInspectorSheet(
         Spacer(modifier = Modifier.height(20.dp))
 
         // AI Confidence
-        val conf = session.classificationConfidence
+        val conf = primarySession.classificationConfidence
         if (conf != null) {
             val confPercent = (conf * 100).toInt()
             val confColor = when {
@@ -525,7 +536,7 @@ fun SessionInspectorSheet(
                     color = confColor,
                     fontWeight = FontWeight.Bold
                 )
-                if (session.isManuallyCorrected) {
+                if (primarySession.isManuallyCorrected) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         "(Manual)",
@@ -540,13 +551,19 @@ fun SessionInspectorSheet(
         // Technical IDs
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                "SESSION ID: ${session.id}",
+                "BATCH OF ${sessions.size} SESSION(S)",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                "DEVICE ID: ${session.deviceId}",
+                "PRIMARY ID: ${primarySession.id}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "DEVICE ID: ${primarySession.deviceId}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
@@ -629,11 +646,13 @@ fun SessionInspectorSheet(
 
         Button(
             onClick = {
-                val updatedSession = session.copy(
-                    contextId = selectedContextId,
-                    projectId = selectedProjectId
-                )
-                viewModel.updateSession(updatedSession)
+                sessions.forEach { s ->
+                    val updatedSession = s.copy(
+                        contextId = selectedContextId,
+                        projectId = selectedProjectId
+                    )
+                    viewModel.updateSession(updatedSession)
+                }
                 onClose()
             },
             modifier = Modifier

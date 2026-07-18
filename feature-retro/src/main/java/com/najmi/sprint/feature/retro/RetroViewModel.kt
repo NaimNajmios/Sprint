@@ -6,6 +6,7 @@ import com.najmi.sprint.core.domain.model.Context
 import com.najmi.sprint.core.domain.model.RetroEntry
 import com.najmi.sprint.core.domain.model.Session
 import com.najmi.sprint.core.domain.repository.ContextRepository
+import com.najmi.sprint.core.domain.repository.GlobalContextManager
 import com.najmi.sprint.core.domain.repository.RetroRepository
 import com.najmi.sprint.core.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,7 +46,8 @@ data class RetroState(
 class RetroViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val contextRepository: ContextRepository,
-    private val retroRepository: RetroRepository
+    private val retroRepository: RetroRepository,
+    private val globalContextManager: GlobalContextManager
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RetroState())
@@ -55,16 +57,17 @@ class RetroViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 contextRepository.observeActiveContexts(),
-                retroRepository.observeRetros()
-            ) { contexts, retros ->
-                Pair(contexts, retros)
-            }.collect { (contexts, retros) ->
-                computeWeeklyStats(contexts, retros)
+                retroRepository.observeRetros(),
+                globalContextManager.selectedContextId
+            ) { contexts, retros, selectedContextId ->
+                Triple(contexts, retros, selectedContextId)
+            }.collect { (contexts, retros, selectedContextId) ->
+                computeWeeklyStats(contexts, retros, selectedContextId)
             }
         }
     }
 
-    private suspend fun computeWeeklyStats(contexts: List<Context>, retros: List<RetroEntry>) {
+    private suspend fun computeWeeklyStats(contexts: List<Context>, retros: List<RetroEntry>, selectedContextId: String?) {
         val tz = TimeZone.currentSystemDefault()
         val today = Clock.System.now().toLocalDateTime(tz).date
 
@@ -73,7 +76,13 @@ class RetroViewModel @Inject constructor(
         val startInstant = weekStart.atStartOfDayIn(tz)
         val endInstant = today.minus(DatePeriod(days = -1)).atStartOfDayIn(tz) // tomorrow start
 
-        val sessions = sessionRepository.getSessionsBetween(startInstant, endInstant)
+        val allSessions = sessionRepository.getSessionsBetween(startInstant, endInstant)
+        
+        val sessions = if (selectedContextId != null) {
+            allSessions.filter { it.contextId == selectedContextId }
+        } else {
+            allSessions
+        }
 
         // Weekly totals per context
         val weeklyPerContext = mutableMapOf<String, Long>()
