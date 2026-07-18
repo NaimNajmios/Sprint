@@ -29,6 +29,7 @@ include(":core-domain")
 include(":core-data")
 include(":core-sync")
 include(":core-ai")
+include(":core-security")
 
 // ── Feature modules (Compose UI) ──
 include(":feature-tracker")
