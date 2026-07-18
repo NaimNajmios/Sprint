@@ -105,8 +105,9 @@ androidApp → feature-* → core-data → core-domain
 | 11 | Ignored Package Management | ✅ |
 | 12 | UI Consistency & Supabase Sync Fix | ✅ |
 | 13 | Project Tools (Secrets, GitHub, Docs) | ✅ |
-| 14 | Windows desktop expansion | 🔲 |
-| 15 | Physical signal tracking (Flip-to-pause) | ✅ |
+| 14 | Kanban Automation & Markdown Engine | ✅ |
+| 15 | Windows desktop expansion | 🔲 |
+| 16 | Physical signal tracking (Flip-to-pause) | ✅ |
 
 ---
 
