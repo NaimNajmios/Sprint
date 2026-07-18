@@ -46,84 +46,127 @@ fun KanbanScreen(
     val activeCount = (state.tasksByStatus[TaskStatus.BACKLOG]?.size ?: 0) + (state.tasksByStatus[TaskStatus.IN_PROGRESS]?.size ?: 0)
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(MaterialTheme.colorScheme.surface) // Match sheet background
         ) {
             // Daily Ledger: HeroPanel
-            HeroPanel(
-                title = "TASK BOARD",
-                heroFigure = "$activeCount Active",
-                toggleOptions = listOf("Board", "List"),
-                selectedToggle = viewMode,
-                onToggleSelected = { viewMode = it },
-                chartData = listOf(1f, 2f, 1.5f, 3f, 2f), // Subtle dummy wave
-                modifier = Modifier.zIndex(0f)
-            )
+            item {
+                HeroPanel(
+                    title = "TASK BOARD",
+                    heroFigure = "$activeCount Active",
+                    toggleOptions = listOf("Board", "List"),
+                    selectedToggle = viewMode,
+                    onToggleSelected = { viewMode = it },
+                    chartData = listOf(1f, 2f, 1.5f, 3f, 2f), // Subtle dummy wave
+                    modifier = Modifier.background(MaterialTheme.colorScheme.background).zIndex(0f)
+                )
+            }
 
-            // SheetList overlapping HeroPanel
-            SheetList(
-                modifier = Modifier
-                    .offset(y = (-24).dp)
-                    .zIndex(1f)
-            ) {
-                if (viewMode == "Board") {
-                    // Horizontal Board
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 8.dp)
+            // Sheet Header Handle
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-24).dp)
+                        .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        TaskStatus.entries.forEach { status ->
-                            KanbanColumn(
-                                status = status,
-                                tasks = state.tasksByStatus[status] ?: emptyList(),
-                                contexts = state.contexts,
-                                onMoveTask = { taskId, newStatus -> viewModel.moveTask(taskId, newStatus) },
-                                onDeleteTask = { viewModel.deleteTask(it) }
-                            )
-                        }
+                        Box(modifier = Modifier.width(32.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Color.Gray.copy(alpha = 0.3f)))
                     }
-                } else {
-                    // Vertical List
-                    LazyColumn(
+                }
+            }
+
+            if (viewMode == "Board") {
+                item {
+                    val config = androidx.compose.ui.platform.LocalConfiguration.current
+                    Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp),
-                        contentPadding = PaddingValues(bottom = 80.dp, top = 8.dp)
+                            .fillMaxWidth()
+                            .offset(y = (-24).dp)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .height(config.screenHeightDp.dp - 200.dp) // Allow board to fill remaining screen height
                     ) {
-                        TaskStatus.entries.forEach { status ->
-                            val tasks = state.tasksByStatus[status] ?: emptyList()
-                            if (tasks.isNotEmpty()) {
-                                item {
-                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 12.dp)) {
-                                        if (status == TaskStatus.IN_PROGRESS) {
-                                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                        }
-                                        Text(
-                                            text = status.name.replace("_", " "),
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                items(tasks, key = { it.id }) { task ->
-                                    val context = state.contexts.find { it.id == task.contextId }
-                                    TaskCard(
-                                        task = task,
-                                        context = context,
-                                        onMoveTask = { t, s -> viewModel.moveTask(t, s) },
-                                        onDeleteTask = { viewModel.deleteTask(it) }
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                }
+                        // Horizontal Board
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 8.dp)
+                        ) {
+                            TaskStatus.entries.forEach { status ->
+                                KanbanColumn(
+                                    status = status,
+                                    tasks = state.tasksByStatus[status] ?: emptyList(),
+                                    contexts = state.contexts,
+                                    onMoveTask = { taskId, newStatus -> viewModel.moveTask(taskId, newStatus) },
+                                    onDeleteTask = { viewModel.deleteTask(it) }
+                                )
                             }
                         }
                     }
+                }
+            } else {
+                // Vertical List
+                TaskStatus.entries.forEach { status ->
+                    val tasks = state.tasksByStatus[status] ?: emptyList()
+                    if (tasks.isNotEmpty()) {
+                        item {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically, 
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .offset(y = (-24).dp)
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                            ) {
+                                if (status == TaskStatus.IN_PROGRESS) {
+                                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                                Text(
+                                    text = status.name.replace("_", " "),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        items(tasks, key = { it.id }) { task ->
+                            val context = state.contexts.find { it.id == task.contextId }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .offset(y = (-24).dp)
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .padding(horizontal = 16.dp)
+                                    .padding(bottom = 12.dp)
+                            ) {
+                                TaskCard(
+                                    task = task,
+                                    context = context,
+                                    onMoveTask = { t, s -> viewModel.moveTask(t, s) },
+                                    onDeleteTask = { viewModel.deleteTask(it) }
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                // Bottom padding for FAB
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset(y = (-24).dp)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .height(80.dp)
+                    )
                 }
             }
         }

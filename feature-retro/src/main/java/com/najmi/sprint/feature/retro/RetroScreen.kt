@@ -44,53 +44,71 @@ fun RetroScreen(
     // Map daily breakdown totals to wave chart floats
     val waveData = state.dailyBreakdown.map { it.totalMinutes.toFloat() }
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.surface) // Match sheet background
     ) {
         // Daily Ledger: HeroPanel
-        HeroPanel(
-            title = "THIS WEEK",
-            heroFigure = formatHeroMinutes(state.weeklyTotalMinutes),
-            toggleOptions = listOf("This Week", "Last Week"),
-            selectedToggle = "This Week",
-            onToggleSelected = { /* TODO Phase 11 Time Navigation */ },
-            chartData = if (waveData.size >= 2) waveData else if (waveData.size == 1) waveData + waveData else emptyList(),
-            modifier = Modifier.zIndex(0f)
-        )
+        item {
+            HeroPanel(
+                title = "THIS WEEK",
+                heroFigure = formatHeroMinutes(state.weeklyTotalMinutes),
+                toggleOptions = listOf("This Week", "Last Week"),
+                selectedToggle = "This Week",
+                onToggleSelected = { /* TODO Phase 11 Time Navigation */ },
+                chartData = if (waveData.size >= 2) waveData else if (waveData.size == 1) waveData + waveData else emptyList(),
+                modifier = Modifier.background(MaterialTheme.colorScheme.background).zIndex(0f)
+            )
+        }
 
-        // SheetList Overlapping the Hero
-        SheetList(
-            modifier = Modifier
-                .offset(y = (-24).dp)
-                .zIndex(1f)
-        ) {
-            LazyColumn(
-                contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 80.dp),
+        // Sheet Header Handle
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (-24).dp)
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(modifier = Modifier.width(32.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Color.Gray.copy(alpha = 0.3f)))
+                }
+            }
+        }
+
+        // Content
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (-24).dp)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 80.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                
                 // --- Top App Stat ---
-                item {
-                    Column {
-                        Text(
-                            text = "Top Application",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = PackageDisplayName.simplify(state.topApp),
-                            style = MaterialTheme.typography.titleMedium, // Inter SemiBold
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                Column {
+                    Text(
+                        text = "Top Application",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = PackageDisplayName.simplify(state.topApp),
+                        style = MaterialTheme.typography.titleMedium, // Inter SemiBold
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
 
                 // --- AI Insights (Editorial Feel) ---
                 if (state.retros.isNotEmpty()) {
-                    items(state.retros) { retro ->
+                    state.retros.forEach { retro ->
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
@@ -129,15 +147,13 @@ fun RetroScreen(
                 }
 
                 // --- Context Breakdown ---
-                item {
-                    Text(
-                        text = "Context Breakdown",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+                Text(
+                    text = "Context Breakdown",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
 
-                items(state.weeklyPerContext.entries.toList()) { (contextId, minutes) ->
+                state.weeklyPerContext.forEach { (contextId, minutes) ->
                     val context = state.contexts.find { it.id == contextId }
                     ContextBreakdownRow(
                         contextName = context?.name ?: "Unclassified",
@@ -148,7 +164,7 @@ fun RetroScreen(
                 }
 
                 // --- Daily Activity Bar Chart ---
-                item {
+                Column {
                     Text(
                         text = "Daily Activity",
                         style = MaterialTheme.typography.titleMedium,
