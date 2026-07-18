@@ -1,8 +1,6 @@
 package com.najmi.sprint.feature.tracker
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -17,21 +15,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.domain.model.Context
 import com.najmi.sprint.core.domain.model.Project
 import com.najmi.sprint.core.domain.model.Session
+import com.najmi.sprint.core.ui.components.HeroPanel
+import com.najmi.sprint.core.ui.components.PillToggle
+import com.najmi.sprint.core.ui.components.SheetList
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,98 +48,113 @@ fun TrackerScreen(
         return
     }
 
+    val totalTime = state.timeSpentPerContext.values.sum()
+    val formattedHeroTime = formatHeroDuration(totalTime)
+
+    // Temporary fake wave data (until Phase 11 real metrics)
+    val waveData = if (state.todaySessions.isEmpty()) emptyList() else listOf(10f, 25f, 15f, 30f, 20f, 35f, 10f)
+    
+    // For Context Filter Pill Toggle inside the SheetList
+    val filterOptions = listOf("All") + state.contexts.map { it.name }.take(3)
+    var selectedFilter by remember { mutableStateOf("All") }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp)
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Alexandria: Editorial label + headline
-        Text(
-            text = "TODAY",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            letterSpacing = MaterialTheme.typography.labelMedium.letterSpacing
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "Dashboard",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onBackground
+        // Top HeroPanel
+        HeroPanel(
+            title = "TODAY",
+            heroFigure = formattedHeroTime,
+            toggleOptions = listOf("Today", "This Week"),
+            selectedToggle = "Today",
+            onToggleSelected = { /* TODO: Phase 11 Time Range Switch */ },
+            chartData = waveData,
+            modifier = Modifier.zIndex(0f)
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Live Tracking Pill
-        if (state.todaySessions.any { it.endTime == null }) {
-            val activeSession = state.todaySessions.first { it.endTime == null }
-            val activeContext = state.contexts.find { it.id == activeSession.contextId }
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
+        // The SheetList overlapping from the bottom
+        SheetList(
+            modifier = Modifier
+                .offset(y = (-24).dp)
+                .zIndex(1f)
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                // Live Tracking Indicator (if any)
+                if (state.todaySessions.any { it.endTime == null }) {
+                    val activeSession = state.todaySessions.first { it.endTime == null }
+                    val activeContext = state.contexts.find { it.id == activeSession.contextId }
+                    Row(
                         modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "Tracking: ${activeContext?.name ?: "Unknown"}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Tracking: ${activeContext?.name ?: "Unknown"}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // Context Filter Pill
+                if (state.contexts.isNotEmpty()) {
+                    PillToggle(
+                        options = filterOptions,
+                        selectedOption = selectedFilter,
+                        onOptionSelected = { selectedFilter = it },
+                        isOnDarkSurface = false,
+                        modifier = Modifier.padding(bottom = 16.dp)
                     )
                 }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-        }
 
-        // Hero Chart
-        TimeDistributionChart(
-            timeSpentPerContext = state.timeSpentPerContext,
-            contexts = state.contexts
-        )
+                val displaySessions = if (selectedFilter == "All") {
+                    state.todaySessions
+                } else {
+                    val targetCtxId = state.contexts.find { it.name == selectedFilter }?.id
+                    state.todaySessions.filter { it.contextId == targetCtxId }
+                }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Text(
-            text = "Timeline",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (state.todaySessions.isEmpty()) {
-            Text(
-                text = "No tracking data yet for today.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(state.todaySessions) { session ->
-                    val context = state.contexts.find { it.id == session.contextId }
-                    SessionCard(
-                        session = session, 
-                        context = context,
-                        onClick = {
-                            selectedSession = session
-                            scope.launch { sheetState.show() }
+                if (displaySessions.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No tracking data yet.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(bottom = 80.dp)
+                    ) {
+                        items(displaySessions, key = { it.id }) { session ->
+                            val context = state.contexts.find { it.id == session.contextId }
+                            SessionCard(
+                                session = session,
+                                context = context,
+                                onClick = {
+                                    selectedSession = session
+                                    scope.launch { sheetState.show() }
+                                }
+                            )
                         }
-                    )
+                    }
                 }
             }
         }
@@ -173,93 +186,7 @@ fun TrackerScreen(
     }
 }
 
-@Composable
-fun TimeDistributionChart(
-    timeSpentPerContext: Map<String, Long>,
-    contexts: List<Context>
-) {
-    val totalTime = timeSpentPerContext.values.sum().coerceAtLeast(1L)
-    
-    var animationPlayed by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { animationPlayed = true }
-
-    val sweepAngle = animateFloatAsState(
-        targetValue = if (animationPlayed) 360f else 0f,
-        animationSpec = tween(durationMillis = 1500),
-        label = "sweepAngle"
-    )
-
-    // Alexandria: Context bar (horizontal stacked bar) instead of donut
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // Stacked horizontal bar
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-            ) {
-                if (timeSpentPerContext.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
-                    )
-                } else {
-                    timeSpentPerContext.forEach { (contextId, duration) ->
-                        val ctx = contexts.find { it.id == contextId }
-                        val fraction = duration.toFloat() / totalTime
-                        Box(
-                            modifier = Modifier
-                                .weight(fraction.coerceAtLeast(0.01f))
-                                .fillMaxHeight()
-                                .background(parseColor(ctx?.colorHex ?: "#888888"))
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        // Legend row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            for ((contextId, duration) in timeSpentPerContext) {
-                val context = contexts.find { it.id == contextId } ?: continue
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(parseColor(context.colorHex))
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = context.name,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = formatDuration(duration),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SessionCard(
     session: Session, 
@@ -268,7 +195,9 @@ fun SessionCard(
 ) {
     val localContext = LocalContext.current
 
-    // Alexandria: No hard borders. Use tonal surface shifts.
+    // Row anatomy from Daily Ledger spec:
+    // Icon (placeholder for now) | Title | Duration | Context-color dot
+    // Small corner radius for list rows (8dp)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -282,23 +211,29 @@ fun SessionCard(
                     ).show()
                 }
             ),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        shape = RoundedCornerShape(8.dp),
+        color = Color.Transparent
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(vertical = 12.dp, horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Context indicator line
+            // App icon placeholder (Phase 12 / Polish)
             Box(
                 modifier = Modifier
-                    .width(4.dp)
-                    .height(40.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(parseColor(context?.colorHex ?: "#888888"))
-            )
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = simplifyPackageName(session.rawLabel).take(1).uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             
             Spacer(modifier = Modifier.width(16.dp))
             
@@ -306,31 +241,32 @@ fun SessionCard(
                 Text(
                     text = simplifyPackageName(session.rawLabel),
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = context?.name ?: "Unclassified",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = formatTime(session.startTime),
-                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
-                val duration = session.endTime?.minus(session.startTime)?.inWholeMilliseconds ?: 0L
                 Text(
-                    text = formatDuration(duration),
+                    text = formatTime(session.startTime),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            
+            val duration = session.endTime?.minus(session.startTime)?.inWholeMilliseconds ?: 0L
+            Text(
+                text = formatDuration(duration),
+                style = MaterialTheme.typography.labelMedium, // Plex Mono Data role
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            // Context-color dot
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(parseColor(context?.colorHex ?: "#888888"))
+            )
         }
     }
 }
@@ -350,6 +286,7 @@ private fun formatTime(instant: Instant): String {
     return "$h:$m"
 }
 
+// Data precision duration
 private fun formatDuration(ms: Long): String {
     val totalSecs = ms / 1000
     val h = totalSecs / 3600
@@ -360,6 +297,14 @@ private fun formatDuration(ms: Long): String {
         m > 0 -> "${m}m"
         else -> "${s}s"
     }
+}
+
+// Hero format duration (0h 00m)
+private fun formatHeroDuration(ms: Long): String {
+    val totalSecs = ms / 1000
+    val h = totalSecs / 3600
+    val m = (totalSecs % 3600) / 60
+    return "${h}h ${m.toString().padStart(2, '0')}m"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -563,7 +508,6 @@ fun SessionInspectorSheet(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // Save Button — Alexandria: gradient-like primary fill
         Button(
             onClick = {
                 val updatedSession = session.copy(
@@ -576,9 +520,10 @@ fun SessionInspectorSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(24.dp), // Pill shape for Daily Ledger
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = Color.Black // Dark text on chartreuse
             )
         ) {
             Text(
