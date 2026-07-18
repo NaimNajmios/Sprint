@@ -93,12 +93,9 @@ class ClassificationWorker @AssistedInject constructor(
                     break
                 }
 
-                // Ignore currently active session
-                if (session.endTime == null) continue
-
                 // 1. Double check the Rule Table (in case a rule was added recently)
                 val rule = ruleRepository.getRuleForPackage(session.rawLabel)
-                if (rule != null) {
+                if (rule != null && rule.contextId != "UNCLASSIFIED") {
                     sessionRepository.updateSession(session.copy(contextId = rule.contextId))
                     continue
                 }
@@ -122,21 +119,7 @@ class ClassificationWorker @AssistedInject constructor(
 
                 val appName = metadata.first
                 val categoryStr = metadata.second
-                val isSystemApp = metadata.third
-                
-                if (isSystemApp) {
-                    AppLogger.d("ClassificationWorker", "System app detected: ${session.rawLabel}. Marking as Ignored.")
-                    sessionRepository.deleteSession(session.id)
-                    ruleRepository.insertOrUpdateRule(
-                        ClassificationRule(
-                            packageName = session.rawLabel,
-                            contextId = "UNCLASSIFIED",
-                            lastConfirmedAt = Clock.System.now(),
-                            isIgnored = true
-                        )
-                    )
-                    continue
-                }
+                // Removed isSystemApp check here because it incorrectly flags apps like Google Photos, Maps, and Chrome
                 
                 var localMatchId: String? = null
                 if (metadata != null) {
