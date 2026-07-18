@@ -8,6 +8,7 @@ import androidx.room.Update
 import com.najmi.sprint.core.data.local.entity.ContextEntity
 import com.najmi.sprint.core.data.local.entity.ProjectEntity
 import com.najmi.sprint.core.data.local.entity.RetroEntryEntity
+import com.najmi.sprint.core.data.local.entity.ProjectDocumentEntity
 import com.najmi.sprint.core.data.local.entity.SessionEntity
 import com.najmi.sprint.core.data.local.entity.TaskEntity
 import com.najmi.sprint.core.domain.model.TaskStatus
