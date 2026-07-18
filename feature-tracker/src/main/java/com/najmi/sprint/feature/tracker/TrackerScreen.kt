@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.najmi.sprint.core.ui.theme.SurfaceHero
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -70,33 +71,50 @@ fun TrackerScreen(
         if (data.size == 1) data + data else data // Ensure at least 2 points for Canvas path
     }
     
-    // For Context Filter Pill Toggle inside the SheetList
-    val filterOptions = listOf("All") + state.contexts.map { it.name }.take(3)
-    var selectedFilter by remember { mutableStateOf("All") }
-
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(SurfaceHero) // Match hero background
     ) {
         // Top HeroPanel
-        HeroPanel(
-            title = "TODAY",
-            heroFigure = formattedHeroTime,
-            toggleOptions = listOf("Today", "This Week"),
-            selectedToggle = "Today",
-            onToggleSelected = { /* TODO: Phase 11 Time Range Switch */ },
-            chartData = waveData,
-            modifier = Modifier.zIndex(0f)
-        )
+        item {
+            HeroPanel(
+                title = "TODAY",
+                heroFigure = formattedHeroTime,
+                toggleOptions = listOf("Today", "This Week"),
+                selectedToggle = "Today",
+                onToggleSelected = { /* TODO: Phase 11 Time Range Switch */ },
+                chartData = waveData,
+                modifier = Modifier.zIndex(0f)
+            )
+        }
 
-        // The SheetList overlapping from the bottom
-        SheetList(
-            modifier = Modifier
-                .offset(y = (-24).dp)
-                .zIndex(1f)
-        ) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        // The Sheet Header (Handle & Live Tracking)
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (-24).dp)
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 16.dp)
+            ) {
+                // Drag handle
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(32.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color.Gray.copy(alpha = 0.3f))
+                    )
+                }
+
                 // Live Tracking Indicator (if any)
                 if (state.todaySessions.any { it.endTime == null }) {
                     val activeSession = state.todaySessions.first { it.endTime == null }
@@ -104,7 +122,7 @@ fun TrackerScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp),
+                            .padding(vertical = 8.dp, horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -122,63 +140,63 @@ fun TrackerScreen(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
+            }
+        }
 
-                // Context Filter Pill
-                if (state.contexts.isNotEmpty()) {
-                    PillToggle(
-                        options = filterOptions,
-                        selectedOption = selectedFilter,
-                        onOptionSelected = { selectedFilter = it },
-                        isOnDarkSurface = false,
-                        modifier = Modifier.padding(bottom = 16.dp)
+        if (state.todaySessions.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-24).dp)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(vertical = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No tracking data yet.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
-                val displaySessions = if (selectedFilter == "All") {
-                    state.todaySessions
-                } else {
-                    val targetCtxId = state.contexts.find { it.name == selectedFilter }?.id
-                    state.todaySessions.filter { it.contextId == targetCtxId }
-                }
-
-                if (displaySessions.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No tracking data yet.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    val groupedSessions = displaySessions.groupBy { it.rawLabel }.values.toList()
-                    
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(bottom = 80.dp)
-                    ) {
-                        items(groupedSessions, key = { it.first().rawLabel }) { group ->
-                            val latestSession = group.maxByOrNull { it.startTime } ?: return@items
-                            val totalDuration = group.sumOf { it.endTime?.minus(it.startTime)?.inWholeMilliseconds ?: 0L }
-                            val isActive = group.any { it.endTime == null }
-                            val context = state.contexts.find { it.id == latestSession.contextId }
-                            
-                            SessionCard(
-                                session = latestSession,
-                                context = context,
-                                overrideDurationMs = if (isActive) null else totalDuration,
-                                onClick = {
-                                    selectedSessionGroup = group
-                                    scope.launch { sheetState.show() }
-                                }
-                            )
+            }
+        } else {
+            val groupedSessions = state.todaySessions.groupBy { it.rawLabel }.values.toList()
+            
+            items(groupedSessions, key = { it.first().rawLabel }) { group ->
+                val latestSession = group.maxByOrNull { it.startTime } ?: return@items
+                val totalDuration = group.sumOf { it.endTime?.minus(it.startTime)?.inWholeMilliseconds ?: 0L }
+                val isActive = group.any { it.endTime == null }
+                val context = state.contexts.find { it.id == latestSession.contextId }
+                
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-24).dp)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    SessionCard(
+                        session = latestSession,
+                        context = context,
+                        overrideDurationMs = if (isActive) null else totalDuration,
+                        onClick = {
+                            selectedSessionGroup = group
+                            scope.launch { sheetState.show() }
                         }
-                    }
+                    )
                 }
+            }
+            
+            // Bottom Padding Item
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-24).dp)
+                        .height(80.dp)
+                        .background(MaterialTheme.colorScheme.surface)
+                )
             }
         }
     }
@@ -602,6 +620,48 @@ fun SessionInspectorSheet(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        var showConfirmDialog by remember { mutableStateOf(false) }
+        
+        if (showConfirmDialog) {
+            AlertDialog(
+                onDismissRequest = { showConfirmDialog = false },
+                title = { 
+                    Text("Confirm Changes", style = MaterialTheme.typography.titleLarge) 
+                },
+                text = { 
+                    Text("Are you sure you want to update these sessions?", style = MaterialTheme.typography.bodyMedium) 
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            sessions.forEach { s ->
+                                val updatedSession = s.copy(
+                                    contextId = selectedContextId,
+                                    projectId = selectedProjectId
+                                )
+                                viewModel.updateSession(updatedSession)
+                            }
+                            showConfirmDialog = false
+                            onClose()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("Confirm")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showConfirmDialog = false }) {
+                        Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(24.dp)
+            )
+        }
+
         // Project Dropdown
         if (selectedContextId != null && projectsForContext.isNotEmpty()) {
             ExposedDropdownMenuBox(
@@ -645,23 +705,14 @@ fun SessionInspectorSheet(
         }
 
         Button(
-            onClick = {
-                sessions.forEach { s ->
-                    val updatedSession = s.copy(
-                        contextId = selectedContextId,
-                        projectId = selectedProjectId
-                    )
-                    viewModel.updateSession(updatedSession)
-                }
-                onClose()
-            },
+            onClick = { showConfirmDialog = true },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
             shape = RoundedCornerShape(24.dp), // Pill shape for Daily Ledger
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.Black // Dark text on chartreuse
+                contentColor = Color.White // Fix: Make text white instead of black
             )
         ) {
             Text(

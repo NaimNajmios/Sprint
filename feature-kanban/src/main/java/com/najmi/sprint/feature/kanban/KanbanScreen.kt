@@ -198,6 +198,36 @@ fun TaskCard(
     onDeleteTask: (String) -> Unit
 ) {
     var expandedMenu by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete Task", style = MaterialTheme.typography.titleLarge) },
+            text = { Text("Are you sure you want to delete '${task.title}'?", style = MaterialTheme.typography.bodyMedium) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDeleteTask(task.id)
+                        showDeleteConfirm = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(24.dp)
+        )
+    }
 
     // Daily Ledger: Card with outline or very subtle elevation on white surface
     Surface(
@@ -276,7 +306,7 @@ fun TaskCard(
                                 )
                             },
                             onClick = {
-                                onDeleteTask(task.id)
+                                showDeleteConfirm = true
                                 expandedMenu = false
                             }
                         )
