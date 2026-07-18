@@ -468,6 +468,39 @@ fun SessionInspectorSheet(
             }
         }
         
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Duration and Source
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Column {
+                Text(
+                    "DURATION",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                val durationMs = session.endTime?.minus(session.startTime)?.inWholeMilliseconds ?: 0L
+                Text(
+                    if (session.endTime == null) "Active" else formatDuration(durationMs),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    "SOURCE",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    session.source.name.replace("_", " "),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+        
         Spacer(modifier = Modifier.height(20.dp))
 
         // AI Confidence
@@ -503,6 +536,22 @@ fun SessionInspectorSheet(
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
+
+        // Technical IDs
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                "SESSION ID: ${session.id}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "DEVICE ID: ${session.deviceId}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Context Dropdown
         ExposedDropdownMenuBox(
