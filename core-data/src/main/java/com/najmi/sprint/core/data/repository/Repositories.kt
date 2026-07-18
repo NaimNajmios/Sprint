@@ -210,6 +210,9 @@ class RoomRuleRepository @Inject constructor(
 class RoomProjectDocumentRepository @Inject constructor(
     private val dao: com.najmi.sprint.core.data.local.dao.ProjectDocumentDao
 ) : com.najmi.sprint.core.domain.repository.ProjectDocumentRepository {
+    override fun observeAllDocuments(): Flow<List<ProjectDocument>> =
+        dao.observeAllDocuments().map { list -> list.map { it.toDomain() } }
+
     override fun observeDocumentsForProject(projectId: String): Flow<List<ProjectDocument>> =
         dao.observeDocumentsForProject(projectId).map { list -> list.map { it.toDomain() } }
 

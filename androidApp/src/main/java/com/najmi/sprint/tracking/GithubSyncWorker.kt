@@ -14,6 +14,12 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.firstOrNull
 
+import com.najmi.sprint.core.domain.repository.TaskRepository
+import com.najmi.sprint.core.domain.model.Task
+import com.najmi.sprint.core.domain.model.TaskStatus
+import kotlinx.datetime.Clock
+import java.util.UUID
+
 @HiltWorker
 class GithubSyncWorker @AssistedInject constructor(
     @Assisted context: Context,
@@ -21,7 +27,8 @@ class GithubSyncWorker @AssistedInject constructor(
     private val projectRepository: ProjectRepository,
     private val secretRepository: SecretRepository,
     private val githubClient: GithubClient,
-    private val githubCacheDao: GithubCacheDao
+    private val githubCacheDao: GithubCacheDao,
+    private val taskRepository: TaskRepository
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -81,5 +88,33 @@ class GithubSyncWorker @AssistedInject constructor(
 
         githubCacheDao.replaceIssuesForProject(projectId, issueEntities)
         githubCacheDao.replaceCommitsForProject(projectId, commitEntities)
+
+        // Auto-import Github issues into Kanban tasks
+        val allTasks = taskRepository.observeAllTasks().firstOrNull() ?: emptyList()
+        val projectTasks = allTasks.filter { it.projectId == projectId }
+        val project = projectRepository.getProjectById(projectId) ?: return
+
+        issueEntities.forEach { issue ->
+            val existingTask = projectTasks.find { it.githubIssueNumber == issue.issueNumber }
+            if (existingTask == null) {
+                // Auto-create task in backlog
+                val newTask = Task(
+                    id = UUID.randomUUID().toString(),
+                    contextId = project.contextId,
+                    projectId = projectId,
+                    title = issue.title,
+                    status = TaskStatus.BACKLOG,
+                    createdAt = Clock.System.now(),
+                    updatedAt = Clock.System.now(),
+                    deviceId = "auto_sync",
+                    githubIssueNumber = issue.issueNumber,
+                    githubIssueUrl = issue.htmlUrl
+                )
+                taskRepository.insertTask(newTask)
+            } else if (issue.state == "closed" && existingTask.status != TaskStatus.DONE) {
+                // Auto-close task if issue is closed
+                taskRepository.updateTaskStatus(existingTask.id, TaskStatus.DONE)
+            }
+        }
     }
 }
