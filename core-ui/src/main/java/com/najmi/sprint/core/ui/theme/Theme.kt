@@ -1,6 +1,5 @@
 package com.najmi.sprint.core.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -12,55 +11,33 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = AlexandriaDarkPrimary,
-    onPrimary = AlexandriaDarkOnPrimary,
-    primaryContainer = AlexandriaDarkPrimaryContainer,
-    secondary = AlexandriaDarkSecondary,
-    onSecondary = AlexandriaDarkOnSecondary,
-    secondaryContainer = AlexandriaDarkSecondaryContainer,
-    tertiary = AlexandriaDarkTertiary,
-    onTertiary = AlexandriaDarkOnTertiary,
-    tertiaryContainer = AlexandriaDarkTertiaryContainer,
-    background = AlexandriaDarkBackground,
-    onBackground = AlexandriaDarkOnBackground,
-    surface = AlexandriaDarkSurface,
-    onSurface = AlexandriaDarkOnSurface,
-    surfaceVariant = AlexandriaDarkSurfaceVariant,
-    onSurfaceVariant = AlexandriaDarkOnSurfaceVariant,
-    error = AlexandriaDarkError,
-    onError = AlexandriaDarkOnError,
-    errorContainer = AlexandriaDarkErrorContainer,
-    outline = AlexandriaDarkOutline,
-    outlineVariant = AlexandriaDarkOutlineVariant
+    primary = BrandPrimary,
+    onPrimary = OnPrimary,
+    background = DarkSurfaceBase,
+    onBackground = OnDarkSurface,
+    surface = DarkSurfaceSheet,
+    onSurface = OnDarkSurface,
+    surfaceVariant = SurfaceHero,
+    onSurfaceVariant = OnDarkSurface,
+    // We keep default M3 colors for tertiary, error etc as they are not defined in the new spec
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = AlexandriaPrimary,
-    onPrimary = AlexandriaOnPrimary,
-    primaryContainer = AlexandriaPrimaryContainer,
-    secondary = AlexandriaSecondary,
-    onSecondary = AlexandriaOnSecondary,
-    secondaryContainer = AlexandriaSecondaryContainer,
-    tertiary = AlexandriaTertiary,
-    onTertiary = AlexandriaOnTertiary,
-    tertiaryContainer = AlexandriaTertiaryContainer,
-    background = AlexandriaBackground,
-    onBackground = AlexandriaOnBackground,
-    surface = AlexandriaSurface,
-    onSurface = AlexandriaOnSurface,
-    surfaceVariant = AlexandriaSurfaceVariant,
-    onSurfaceVariant = AlexandriaOnSurfaceVariant,
-    error = AlexandriaError,
-    onError = AlexandriaOnError,
-    errorContainer = AlexandriaErrorContainer,
-    outline = AlexandriaOutline,
-    outlineVariant = AlexandriaOutlineVariant
+    primary = BrandPrimary,
+    onPrimary = OnPrimary,
+    background = LightSurfaceBase,
+    onBackground = OnLightSurface,
+    surface = LightSurfaceSheet,
+    onSurface = OnLightSurface,
+    surfaceVariant = SurfaceHero,
+    onSurfaceVariant = OnDarkSurface, // Hero surface text is always light (on dark navy)
+    // Keep other defaults
 )
 
 @Composable
 fun SprintTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Enforce Alexandria theme over dynamic Material You colors by default
+    // We enforce the Daily Ledger theme over dynamic colors
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {

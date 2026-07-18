@@ -15,64 +15,67 @@ val provider = GoogleFont.Provider(
     certificates = R.array.com_google_android_gms_fonts_certs
 )
 
-val NotoSerif = FontFamily(
-    Font(googleFont = GoogleFont("Noto Serif"), fontProvider = provider, weight = FontWeight.Normal),
-    Font(googleFont = GoogleFont("Noto Serif"), fontProvider = provider, weight = FontWeight.Medium),
-    Font(googleFont = GoogleFont("Noto Serif"), fontProvider = provider, weight = FontWeight.SemiBold),
-    Font(googleFont = GoogleFont("Noto Serif"), fontProvider = provider, weight = FontWeight.Bold)
-)
-
+// UI and Hero role
 val Inter = FontFamily(
     Font(googleFont = GoogleFont("Inter"), fontProvider = provider, weight = FontWeight.Normal),
-    Font(googleFont = GoogleFont("Inter"), fontProvider = provider, weight = FontWeight.Medium)
+    Font(googleFont = GoogleFont("Inter"), fontProvider = provider, weight = FontWeight.Medium),
+    Font(googleFont = GoogleFont("Inter"), fontProvider = provider, weight = FontWeight.SemiBold),
+    Font(googleFont = GoogleFont("Inter"), fontProvider = provider, weight = FontWeight.ExtraBold)
 )
 
-val PublicSans = FontFamily(
-    Font(googleFont = GoogleFont("Public Sans"), fontProvider = provider, weight = FontWeight.Medium)
+// Data role
+val IBMPlexMono = FontFamily(
+    Font(googleFont = GoogleFont("IBM Plex Mono"), fontProvider = provider, weight = FontWeight.Normal),
+    Font(googleFont = GoogleFont("IBM Plex Mono"), fontProvider = provider, weight = FontWeight.Medium)
+)
+
+// Editorial role
+val DMSerifDisplay = FontFamily(
+    Font(googleFont = GoogleFont("DM Serif Display"), fontProvider = provider, weight = FontWeight.Normal)
 )
 
 val Typography = Typography(
-    displayLarge = TextStyle(
-        fontFamily = NotoSerif,
-        fontWeight = FontWeight.SemiBold,
+    displayLarge = TextStyle( // Hero Role
+        fontFamily = Inter,
+        fontWeight = FontWeight.ExtraBold,
         fontSize = 48.sp,
         lineHeight = 52.8.sp,
         letterSpacing = (-0.02).sp
     ),
-    headlineMedium = TextStyle(
-        fontFamily = NotoSerif,
-        fontWeight = FontWeight.SemiBold,
+    headlineMedium = TextStyle( // Editorial Role
+        fontFamily = DMSerifDisplay,
+        fontWeight = FontWeight.Normal,
         fontSize = 24.sp,
         lineHeight = 31.2.sp
     ),
     titleLarge = TextStyle(
-        fontFamily = NotoSerif,
-        fontWeight = FontWeight.Medium,
+        fontFamily = Inter,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 22.sp,
         lineHeight = 28.6.sp
     ),
-    bodyLarge = TextStyle(
+    bodyLarge = TextStyle( // UI Role
         fontFamily = Inter,
         fontWeight = FontWeight.Normal,
         fontSize = 18.sp,
         lineHeight = 28.8.sp
     ),
-    bodyMedium = TextStyle(
+    bodyMedium = TextStyle( // UI Role
         fontFamily = Inter,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp
     ),
-    labelMedium = TextStyle(
-        fontFamily = PublicSans,
+    labelMedium = TextStyle( // Data Role (Mono)
+        fontFamily = IBMPlexMono,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 16.8.sp,
         letterSpacing = 0.02.sp
     ),
-    labelSmall = TextStyle(
-        fontFamily = PublicSans,
-        fontWeight = FontWeight.Medium,
+    labelSmall = TextStyle( // Data Role (Mono)
+        fontFamily = IBMPlexMono,
+        fontWeight = FontWeight.Normal,
         fontSize = 12.sp,
         lineHeight = 12.sp,
         letterSpacing = 0.05.sp
