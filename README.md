@@ -103,8 +103,9 @@ androidApp → feature-* → core-data → core-domain
 | 8–9 | Sync server + encryption | 🔲 |
 | 10 | Monochrome UI & Critical Fixes | ✅ |
 | 11 | Ignored Package Management | ✅ |
-| 12 | Windows desktop expansion | 🔲 |
-| 13 | Physical signal tracking (Flip-to-pause) | ✅ |
+| 12 | UI Consistency & Supabase Sync Fix | ✅ |
+| 13 | Windows desktop expansion | 🔲 |
+| 14 | Physical signal tracking (Flip-to-pause) | ✅ |
 
 ---
 

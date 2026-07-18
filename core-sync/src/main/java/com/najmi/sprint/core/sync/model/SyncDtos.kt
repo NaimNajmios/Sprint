@@ -62,6 +62,11 @@ data class RetroEntryDto(
 
 // Extension functions for mapping DTOs to Domain models and vice-versa
 
+private fun isValidUuid(uuid: String?): Boolean {
+    if (uuid == null) return false
+    return uuid.matches(Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"))
+}
+
 fun Context.toDto() = ContextDto(id = id, name = name, colorHex = colorHex, isActive = isActive)
 fun ContextDto.toDomain() = Context(id = id, name = name, colorHex = colorHex, isActive = isActive)
 
@@ -95,8 +100,8 @@ fun Session.toDto() = SessionDto(
     rawLabel = rawLabel,
     startTime = startTime,
     endTime = endTime,
-    contextId = contextId,
-    projectId = projectId,
+    contextId = if (isValidUuid(contextId)) contextId else null,
+    projectId = if (isValidUuid(projectId)) projectId else null,
     classificationConfidence = classificationConfidence,
     isManuallyCorrected = isManuallyCorrected
 )
@@ -107,7 +112,7 @@ fun SessionDto.toDomain() = Session(
     rawLabel = rawLabel,
     startTime = startTime,
     endTime = endTime,
-    contextId = contextId,
+    contextId = contextId ?: "UNCLASSIFIED",
     projectId = projectId,
     classificationConfidence = classificationConfidence,
     isManuallyCorrected = isManuallyCorrected
@@ -117,7 +122,7 @@ fun RetroEntry.toDto() = RetroEntryDto(
     id = id,
     weekOf = weekOf,
     summaryText = summaryText,
-    flaggedContextId = flaggedContextId,
+    flaggedContextId = if (isValidUuid(flaggedContextId)) flaggedContextId else null,
     generatedByModel = generatedByModel,
     promptVersion = promptVersion,
     criticApproved = criticApproved

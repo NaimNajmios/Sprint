@@ -93,9 +93,6 @@ class SupabaseClient @Inject constructor(
             // But actually Auth plugin handles it.
             // Wait, Supabase requires Authorization header for all requests anyway.
             // Ktor Auth plugin sends Authorization header automatically if BearerTokens are loaded.
-            
-            // Prefer single object return instead of array when returning a single inserted row
-            header("Prefer", "return=representation")
         }
     }
 
