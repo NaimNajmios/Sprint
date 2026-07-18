@@ -32,6 +32,7 @@ import com.najmi.sprint.core.ui.util.DocumentSafHelper
 @Composable
 fun ProjectDetailScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToDocumentViewer: (String, String) -> Unit = { _, _ -> },
     viewModel: ProjectDetailViewModel = hiltViewModel()
 ) {
     val project by viewModel.project.collectAsState()
@@ -147,12 +148,7 @@ fun ProjectDetailScreen(
                     ProjectDocItem(
                         document = doc,
                         onClick = {
-                            val intent = DocumentSafHelper.createViewIntent(doc.uri)
-                            try {
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
+                            onNavigateToDocumentViewer(viewModel.projectId, doc.id)
                         },
                         onDelete = { viewModel.removeDocument(doc.id) }
                     )

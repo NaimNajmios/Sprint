@@ -289,6 +289,20 @@ fun MainScreen(
                 arguments = listOf(androidx.navigation.navArgument("projectId") { type = androidx.navigation.NavType.StringType })
             ) {
                 com.najmi.sprint.ui.project.ProjectDetailScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToDocumentViewer = { projectId, documentId ->
+                        navController.navigate("document_viewer/$projectId/$documentId")
+                    }
+                )
+            }
+            composable(
+                route = "document_viewer/{projectId}/{documentId}",
+                arguments = listOf(
+                    androidx.navigation.navArgument("projectId") { type = androidx.navigation.NavType.StringType },
+                    androidx.navigation.navArgument("documentId") { type = androidx.navigation.NavType.StringType }
+                )
+            ) {
+                com.najmi.sprint.ui.project.DocumentViewerScreen(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
