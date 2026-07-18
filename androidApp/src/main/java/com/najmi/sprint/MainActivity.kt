@@ -15,6 +15,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.foundation.isSystemInDarkTheme
+import android.content.SharedPreferences
+import android.content.ComponentName
+import android.content.pm.PackageManager
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.ui.theme.SprintTheme
@@ -35,6 +40,53 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    object AppearanceManager {
+        var pendingIconTheme: String? = null
+
+        fun scheduleAppIconUpdate(theme: String) {
+            pendingIconTheme = theme
+        }
+
+        fun applyPendingIconUpdate(context: Context) {
+            val theme = pendingIconTheme ?: return
+            pendingIconTheme = null
+            updateAppIcon(context, theme)
+        }
+
+        private fun updateAppIcon(context: Context, theme: String) {
+            val pm = context.packageManager
+            val pkg = context.packageName
+            val basePkg = "com.najmi.sprint"
+
+            val systemComponent = ComponentName(pkg, "$basePkg.MainActivity")
+            val lightComponent = ComponentName(pkg, "$basePkg.MainActivityLight")
+            val darkComponent = ComponentName(pkg, "$basePkg.MainActivityDark")
+
+            val targetComponent = when (theme) {
+                "light" -> lightComponent
+                "dark" -> darkComponent
+                else -> systemComponent
+            }
+
+            val components = listOf(systemComponent, lightComponent, darkComponent)
+            components.forEach { comp ->
+                if (comp == targetComponent) {
+                    pm.setComponentEnabledSetting(
+                        comp,
+                        PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                        PackageManager.DONT_KILL_APP
+                    )
+                } else {
+                    pm.setComponentEnabledSetting(
+                        comp,
+                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                        PackageManager.DONT_KILL_APP
+                    )
+                }
+            }
+        }
+    }
+
     @Inject
     lateinit var authManager: AuthManager
 
@@ -42,7 +94,28 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            SprintTheme {
+            val sharedPrefs = getSharedPreferences("sprint_prefs", Context.MODE_PRIVATE)
+            var themePref by remember { mutableStateOf(sharedPrefs.getString("theme_preference", "system") ?: "system") }
+
+            DisposableEffect(Unit) {
+                val listener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+                    if (key == "theme_preference") {
+                        themePref = prefs.getString("theme_preference", "system") ?: "system"
+                    }
+                }
+                sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+                onDispose {
+                    sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                }
+            }
+
+            val darkTheme = when (themePref) {
+                "light" -> false
+                "dark" -> true
+                else -> isSystemInDarkTheme()
+            }
+
+            SprintTheme(darkTheme = darkTheme) {
                 val permissionViewModel: PermissionViewModel = hiltViewModel()
                 val hasPermission by permissionViewModel.hasUsagePermission.collectAsState()
                 
@@ -97,5 +170,6 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             SprintWidget().updateAll(this@MainActivity)
         }
+        AppearanceManager.applyPendingIconUpdate(this)
     }
 }

@@ -21,6 +21,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -75,6 +76,9 @@ fun SettingsScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            // --- Appearance Section ---
+            AppearanceSection(context = context)
+
             // --- Taxonomy Section ---
             Text(
                 text = "TAXONOMY & ORGANIZATION",
@@ -427,4 +431,84 @@ private fun formatLastTrackedTime(instant: Instant?): String {
     if (instant == null) return "No data recorded yet"
     val local = instant.toLocalDateTime(TimeZone.currentSystemDefault())
     return "Last seen at ${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
+}
+
+@Composable
+private fun AppearanceSection(context: Context) {
+    val sharedPrefs = context.getSharedPreferences("sprint_prefs", Context.MODE_PRIVATE)
+    var currentTheme by androidx.compose.runtime.remember { 
+        androidx.compose.runtime.mutableStateOf(sharedPrefs.getString("theme_preference", "system") ?: "system") 
+    }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
+        Text(
+            text = "APPEARANCE",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ThemeChip(
+                title = "System", 
+                isSelected = currentTheme == "system", 
+                modifier = Modifier.weight(1f)
+            ) {
+                currentTheme = "system"
+                sharedPrefs.edit().putString("theme_preference", "system").apply()
+                MainActivity.AppearanceManager.scheduleAppIconUpdate("system")
+            }
+            
+            ThemeChip(
+                title = "Light", 
+                isSelected = currentTheme == "light", 
+                modifier = Modifier.weight(1f)
+            ) {
+                currentTheme = "light"
+                sharedPrefs.edit().putString("theme_preference", "light").apply()
+                MainActivity.AppearanceManager.scheduleAppIconUpdate("light")
+            }
+            
+            ThemeChip(
+                title = "Dark", 
+                isSelected = currentTheme == "dark", 
+                modifier = Modifier.weight(1f)
+            ) {
+                currentTheme = "dark"
+                sharedPrefs.edit().putString("theme_preference", "dark").apply()
+                MainActivity.AppearanceManager.scheduleAppIconUpdate("dark")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeChip(
+    title: String,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
 }
