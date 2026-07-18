@@ -37,3 +37,14 @@ This phase focused on finalizing the transition to a high-contrast, pure Black a
     *   Updated `AuthManager.kt` and `SupabaseAuthService.kt` to actively cache and provide the `refresh_token`.
     *   Installed and configured the Ktor `Auth` plugin within `SupabaseClient.kt`. 
     *   When the Supabase API returns a `401`, Ktor automatically halts the request, hits the `/auth/v1/token?grant_type=refresh_token` endpoint, persists the newly issued tokens to `AuthManager`, and instantly replays the blocked sync request in the background.
+
+### 3. CI/CD Pipeline & Static Analysis Fixes
+*   **Unit Test Stabilization (`TrackingEngineTest.kt`)**: 
+    *   **Issue**: All tests were failing with `java.lang.RuntimeException` caused by `AppLogger` attempting to invoke native Android `Log.d` methods during a local JVM test environment.
+    *   **Resolution**: Implemented MockK `mockkObject(AppLogger)` within the test setup phase and stubbed all logging operations to return `Unit`, securing the test suite from framework dependencies.
+*   **Compose Lint Analysis Failure (`MainActivity.kt`)**:
+    *   **Issue**: The `lint` task failed with a hard compiler error complaining about unexpected failures.
+    *   **Resolution**: Identified that `mutableStateOf` was used directly inside a Composable without being wrapped in `remember`, which caused the `UnrememberedMutableState` Lint rule to panic. Wrapped state variables correctly in `remember { mutableStateOf(...) }`.
+*   **Deprecation Debt (`TrackerScreen.kt`)**:
+    *   **Issue**: Compilation warnings flagged the use of `Icons.Filled.ArrowBack` as deprecated.
+    *   **Resolution**: Replaced the icon with `Icons.AutoMirrored.Filled.ArrowBack` to properly support Right-to-Left (RTL) layouts according to the latest Compose Material 3 standards.

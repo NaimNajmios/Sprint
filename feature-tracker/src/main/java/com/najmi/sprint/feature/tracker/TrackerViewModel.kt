@@ -9,6 +9,8 @@ import com.najmi.sprint.core.domain.repository.ContextRepository
 import com.najmi.sprint.core.domain.repository.GlobalContextManager
 import com.najmi.sprint.core.domain.repository.ProjectRepository
 import com.najmi.sprint.core.domain.repository.SessionRepository
+import com.najmi.sprint.core.domain.repository.RuleRepository
+import com.najmi.sprint.core.domain.model.ClassificationRule
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.firstOrNull
@@ -34,7 +36,8 @@ class TrackerViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val contextRepository: ContextRepository,
     private val projectRepository: ProjectRepository,
-    private val globalContextManager: GlobalContextManager
+    private val globalContextManager: GlobalContextManager,
+    private val ruleRepository: RuleRepository
 ) : ViewModel() {
 
     private val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
@@ -77,6 +80,17 @@ class TrackerViewModel @Inject constructor(
     fun updateSession(session: Session) {
         viewModelScope.launch {
             sessionRepository.updateSession(session.copy(isManuallyCorrected = true))
+            
+            val ctxId = session.contextId
+            if (ctxId != null) {
+                ruleRepository.insertOrUpdateRule(
+                    ClassificationRule(
+                        packageName = session.rawLabel,
+                        contextId = ctxId,
+                        lastConfirmedAt = Clock.System.now()
+                    )
+                )
+            }
         }
     }
 

@@ -9,7 +9,7 @@ As the final component of Phase 7, we integrated Jetpack Glance to bring Sprint'
 *   **Jetpack Glance:** Leveraged `androidx.glance:glance-appwidget` and `glance-material3` to build the widget using declarative Jetpack Compose syntax, avoiding legacy XML RemoteViews.
 *   **Widget Receiver:** Implemented `SprintWidgetReceiver` extending `GlanceAppWidgetReceiver` to register the widget with the Android OS via `AndroidManifest.xml`.
 *   **Metadata:** Defined `sprint_widget_info.xml` allowing the widget to be resizable horizontally and vertically, occupying a default 3x2 grid cell.
-
+    
 ### 2. Dependency Injection & Data Hydration
 *   **Hilt EntryPoints:** Because widgets run in a separate process outside of `MainActivity`, standard `@Inject` cannot be used. We built a `@EntryPoint WidgetEntryPoint` to cleanly bridge Dagger-Hilt with the widget's lifecycle.
 *   **Dynamic Data Querying:** 

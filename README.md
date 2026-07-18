@@ -57,7 +57,7 @@ androidApp → feature-* → core-data → core-domain
 | Backend | Ktor Server + Postgres (Phase 8+) |
 | Android tracking | UsageStatsManager + WorkManager |
 | Widget | Jetpack Glance |
-| CI | GitHub Actions |
+| CI | GitHub Actions (Automated Tests & Lint) |
 | Static Analysis | detekt |
 
 ---

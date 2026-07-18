@@ -28,7 +28,7 @@ class ClassificationWorker @AssistedInject constructor(
     private val sessionClassifier: SessionClassifier
 ) : CoroutineWorker(appContext, workerParams) {
 
-    private fun getAppMetadata(packageName: String): Pair<String, String>? {
+    private fun getAppMetadata(packageName: String): Triple<String, String, Boolean>? {
         return try {
             val pm = applicationContext.packageManager
             val appInfo = pm.getApplicationInfo(packageName, 0)
@@ -45,7 +45,9 @@ class ClassificationWorker @AssistedInject constructor(
                 android.content.pm.ApplicationInfo.CATEGORY_PRODUCTIVITY -> "Productivity"
                 else -> "Unknown"
             }
-            Pair(appName, categoryStr)
+            
+            val isSystemApp = (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0
+            Triple(appName, categoryStr, isSystemApp)
         } catch (e: Exception) {
             null
         }
@@ -84,8 +86,36 @@ class ClassificationWorker @AssistedInject constructor(
 
                 // 1.5. Stage 1: PackageManager Local Classification
                 val metadata = getAppMetadata(session.rawLabel)
-                val appName = metadata?.first
-                val categoryStr = metadata?.second
+                
+                if (metadata == null) {
+                    AppLogger.d("ClassificationWorker", "Package not found: ${session.rawLabel}. Marking as UNCLASSIFIED.")
+                    sessionRepository.updateSession(session.copy(contextId = "UNCLASSIFIED"))
+                    ruleRepository.insertOrUpdateRule(
+                        ClassificationRule(
+                            packageName = session.rawLabel,
+                            contextId = "UNCLASSIFIED",
+                            lastConfirmedAt = Clock.System.now()
+                        )
+                    )
+                    continue
+                }
+
+                val appName = metadata.first
+                val categoryStr = metadata.second
+                val isSystemApp = metadata.third
+                
+                if (isSystemApp) {
+                    AppLogger.d("ClassificationWorker", "System app detected: ${session.rawLabel}. Marking as UNCLASSIFIED.")
+                    sessionRepository.updateSession(session.copy(contextId = "UNCLASSIFIED"))
+                    ruleRepository.insertOrUpdateRule(
+                        ClassificationRule(
+                            packageName = session.rawLabel,
+                            contextId = "UNCLASSIFIED",
+                            lastConfirmedAt = Clock.System.now()
+                        )
+                    )
+                    continue
+                }
                 
                 var localMatchId: String? = null
                 if (metadata != null) {
@@ -163,6 +193,16 @@ class ClassificationWorker @AssistedInject constructor(
                         ClassificationRule(
                             packageName = session.rawLabel,
                             contextId = finalContextId,
+                            lastConfirmedAt = Clock.System.now()
+                        )
+                    )
+                } else {
+                    AppLogger.d("ClassificationWorker", "Critic rejected classification for ${session.rawLabel}. Marking as UNCLASSIFIED.")
+                    sessionRepository.updateSession(session.copy(contextId = "UNCLASSIFIED"))
+                    ruleRepository.insertOrUpdateRule(
+                        ClassificationRule(
+                            packageName = session.rawLabel,
+                            contextId = "UNCLASSIFIED",
                             lastConfirmedAt = Clock.System.now()
                         )
                     )
