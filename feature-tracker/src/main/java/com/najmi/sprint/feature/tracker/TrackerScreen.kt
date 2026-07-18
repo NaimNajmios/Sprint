@@ -24,6 +24,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.window.Dialog
 import androidx.core.graphics.drawable.toBitmap
@@ -174,29 +175,118 @@ fun TrackerScreen(
             }
         } else {
             val groupedSessions = state.todaySessions.groupBy { it.rawLabel }.values.toList()
-            
-            items(groupedSessions, key = { it.first().rawLabel }) { group ->
-                val latestSession = group.maxByOrNull { it.startTime } ?: return@items
-                val totalDuration = group.sumOf { it.endTime?.minus(it.startTime)?.inWholeMilliseconds ?: 0L }
-                val isActive = group.any { it.endTime == null }
-                val context = state.contexts.find { it.id == latestSession.contextId }
-                
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(y = (-24).dp)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                ) {
-                    SessionCard(
-                        session = latestSession,
-                        context = context,
-                        overrideDurationMs = if (isActive) null else totalDuration,
-                        onClick = {
-                            selectedSessionGroup = group
-                            scope.launch { sheetState.show() }
+            val unclassifiedGroups = groupedSessions.filter { group -> group.maxByOrNull { it.startTime }?.contextId == "UNCLASSIFIED" }
+            val classifiedGroups = groupedSessions.filter { group -> group.maxByOrNull { it.startTime }?.contextId != "UNCLASSIFIED" }
+
+            if (unclassifiedGroups.isNotEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset(y = (-24).dp)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 24.dp, vertical = 12.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.Warning,
+                                contentDescription = "Warning",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "ACTION NEEDED: CLASSIFY APPS",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
+                    }
+                }
+                
+                items(unclassifiedGroups, key = { "unclass_${it.first().rawLabel}" }) { group ->
+                    val latestSession = group.maxByOrNull { it.startTime } ?: return@items
+                    val totalDuration = group.sumOf { it.endTime?.minus(it.startTime)?.inWholeMilliseconds ?: 0L }
+                    val isActive = group.any { it.endTime == null }
+                    val context = state.contexts.find { it.id == latestSession.contextId }
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset(y = (-24).dp)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f))
+                        ) {
+                            SessionCard(
+                                session = latestSession,
+                                context = context,
+                                overrideDurationMs = if (isActive) null else totalDuration,
+                                onClick = {
+                                    selectedSessionGroup = group
+                                    scope.launch { sheetState.show() }
+                                }
+                            )
+                        }
+                    }
+                }
+                
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset(y = (-24).dp)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .height(16.dp)
                     )
+                }
+            }
+
+            if (classifiedGroups.isNotEmpty()) {
+                if (unclassifiedGroups.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "TRACKED TODAY",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .offset(y = (-24).dp)
+                                .background(MaterialTheme.colorScheme.surface)
+                                .padding(horizontal = 24.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+                
+                items(classifiedGroups, key = { it.first().rawLabel }) { group ->
+                    val latestSession = group.maxByOrNull { it.startTime } ?: return@items
+                    val totalDuration = group.sumOf { it.endTime?.minus(it.startTime)?.inWholeMilliseconds ?: 0L }
+                    val isActive = group.any { it.endTime == null }
+                    val context = state.contexts.find { it.id == latestSession.contextId }
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset(y = (-24).dp)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                    ) {
+                        SessionCard(
+                            session = latestSession,
+                            context = context,
+                            overrideDurationMs = if (isActive) null else totalDuration,
+                            onClick = {
+                                selectedSessionGroup = group
+                                scope.launch { sheetState.show() }
+                            }
+                        )
+                    }
                 }
             }
             
