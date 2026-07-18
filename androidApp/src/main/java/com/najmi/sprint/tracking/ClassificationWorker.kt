@@ -13,6 +13,9 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.coroutines.delay
 import com.najmi.sprint.core.domain.logger.AppLogger
 
 @HiltWorker
@@ -34,7 +37,18 @@ class ClassificationWorker @AssistedInject constructor(
                 return Result.success()
             }
 
+            val prefs = applicationContext.getSharedPreferences("sprint_ai_prefs", Context.MODE_PRIVATE)
+            val todayDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
+            val lastDate = prefs.getString("last_date", "")
+            var callsToday = if (todayDate == lastDate) prefs.getInt("calls_today", 0) else 0
+            val maxCallsPerDay = 50
+
             for (session in unclassifiedSessions) {
+                if (callsToday >= maxCallsPerDay) {
+                    AppLogger.w("ClassificationWorker", "Daily AI limit ($maxCallsPerDay) reached. Deferring to tomorrow.")
+                    break
+                }
+
                 // Ignore currently active session
                 if (session.endTime == null) continue
 
@@ -46,13 +60,22 @@ class ClassificationWorker @AssistedInject constructor(
                 }
 
                 // 2. Escalate to Actor-Critic
+                // Add delay to avoid aggressive burst rate limits
+                delay(2000)
                 val actorPrediction = sessionClassifier.actorClassify(session.rawLabel, activeContexts) ?: continue
                 
+                delay(1000)
                 val criticValidation = sessionClassifier.criticReview(
                     packageName = session.rawLabel,
                     actorResponse = actorPrediction,
                     activeContexts = activeContexts
                 ) ?: continue
+                
+                callsToday += 2
+                prefs.edit()
+                    .putString("last_date", todayDate)
+                    .putInt("calls_today", callsToday)
+                    .apply()
 
                 // 3. Commit the result if approved
                 val finalContextId = criticValidation.finalContextId
@@ -77,7 +100,12 @@ class ClassificationWorker @AssistedInject constructor(
 
             Result.success()
         } catch (e: Exception) {
-            AppLogger.e("ClassificationWorker", "Failed to classify sessions", e)
+            val isRateLimit = e.message?.contains("429") == true
+            if (isRateLimit) {
+                AppLogger.w("ClassificationWorker", "Groq Rate Limit (429) hit! Backing off.")
+            } else {
+                AppLogger.e("ClassificationWorker", "Failed to classify sessions", e)
+            }
             Result.retry()
         }
     }
