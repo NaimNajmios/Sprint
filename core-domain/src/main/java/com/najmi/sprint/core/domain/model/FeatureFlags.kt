@@ -44,4 +44,7 @@ object FeatureFlags {
 
     /** Phase 6a: Low-touch / vacation mode */
     const val VACATION_MODE: Boolean = false
+
+    /** Phase 7: Debug console for AI and Tracking */
+    const val DEBUG_CONSOLE: Boolean = true
 }

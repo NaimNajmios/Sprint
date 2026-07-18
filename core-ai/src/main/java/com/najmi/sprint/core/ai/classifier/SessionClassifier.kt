@@ -5,7 +5,7 @@ import com.najmi.sprint.core.domain.model.Context
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
-import android.util.Log
+import com.najmi.sprint.core.domain.logger.AppLogger
 
 @Serializable
 data class ActorClassificationResponse(
@@ -54,12 +54,12 @@ class SessionClassifier @Inject constructor(
             systemPrompt = systemPrompt,
             jsonMode = true
         )
-        Log.d(TAG, "Actor Output for $packageName: $result")
+        AppLogger.d(TAG, "Actor Output for $packageName: $result")
         
         return try {
             json.decodeFromString<ActorClassificationResponse>(extractJson(result))
         } catch (e: Exception) {
-            Log.e(TAG, "Actor failed to parse JSON for $packageName", e)
+            AppLogger.e(TAG, "Actor failed to parse JSON for $packageName", e)
             null
         }
     }
@@ -91,12 +91,12 @@ class SessionClassifier @Inject constructor(
             model = "llama-3.1-8b-instant", // Use a smarter model for the critic
             jsonMode = true
         )
-        Log.d(TAG, "Critic Output for $packageName: $result")
+        AppLogger.d(TAG, "Critic Output for $packageName: $result")
         
         return try {
             json.decodeFromString<CriticReviewResponse>(extractJson(result))
         } catch (e: Exception) {
-            Log.e(TAG, "Critic failed to parse JSON for $packageName", e)
+            AppLogger.e(TAG, "Critic failed to parse JSON for $packageName", e)
             null
         }
     }

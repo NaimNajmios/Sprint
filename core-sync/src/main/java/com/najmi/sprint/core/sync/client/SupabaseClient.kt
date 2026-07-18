@@ -8,6 +8,7 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import com.najmi.sprint.core.domain.logger.AppLogger
 import io.ktor.client.request.header
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -39,7 +40,7 @@ class SupabaseClient @Inject constructor(
         install(Logging) {
             logger = object : Logger {
                 override fun log(message: String) {
-                    android.util.Log.d("SupabaseClient", message)
+                    AppLogger.d("SupabaseClient", message)
                 }
             }
             level = LogLevel.INFO
@@ -68,7 +69,7 @@ class SupabaseClient @Inject constructor(
         install(Logging) {
             logger = object : Logger {
                 override fun log(message: String) {
-                    android.util.Log.d("SupabaseAuth", message)
+                    AppLogger.d("SupabaseAuth", message)
                 }
             }
             level = LogLevel.INFO

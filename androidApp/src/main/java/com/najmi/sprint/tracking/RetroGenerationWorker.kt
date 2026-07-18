@@ -1,7 +1,6 @@
 package com.najmi.sprint.tracking
 
 import android.content.Context
-import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -20,6 +19,7 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
 import java.util.UUID
+import com.najmi.sprint.core.domain.logger.AppLogger
 
 @HiltWorker
 class RetroGenerationWorker @AssistedInject constructor(
@@ -46,7 +46,7 @@ class RetroGenerationWorker @AssistedInject constructor(
             // Check if we already generated a retro for this week
             val existing = retroRepository.getRetroForWeek(weekStart)
             if (existing != null) {
-                Log.d(TAG, "Retro already exists for week of $weekStart, skipping.")
+                AppLogger.d(TAG, "Retro already exists for week of $weekStart, skipping.")
                 return Result.success()
             }
 
@@ -57,7 +57,7 @@ class RetroGenerationWorker @AssistedInject constructor(
             val contexts = contextRepository.observeActiveContexts().first()
 
             if (sessions.isEmpty()) {
-                Log.d(TAG, "No sessions found for this week, skipping retro generation.")
+                AppLogger.d(TAG, "No sessions found for this week, skipping retro generation.")
                 return Result.success()
             }
 
@@ -126,11 +126,11 @@ class RetroGenerationWorker @AssistedInject constructor(
             )
 
             retroRepository.insertRetro(retroEntry)
-            Log.d(TAG, "Retro generated successfully for week of $weekStart")
+            AppLogger.d(TAG, "Retro generated successfully for week of $weekStart")
 
             Result.success()
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to generate retro", e)
+            AppLogger.e(TAG, "Failed to generate retro", e)
             Result.retry()
         }
     }

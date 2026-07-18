@@ -18,6 +18,7 @@ import android.content.Context
 import androidx.glance.appwidget.updateAll
 import com.najmi.sprint.widget.SprintWidget
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.najmi.sprint.core.domain.logger.AppLogger
 
 @Singleton
 class TrackingEngine @Inject constructor(
@@ -145,11 +146,13 @@ class TrackingEngine @Inject constructor(
 
         if (sessionToReopen != null) {
             // Reopen the existing session rather than creating a new one
+            AppLogger.d("TrackingEngine", "Reopening session ${sessionToReopen.id} for $newPackage")
             sessionRepository.updateSession(sessionToReopen.copy(endTime = null))
             activeSessionId = sessionToReopen.id
         } else {
             // Create a brand new session
             val newSessionId = UUID.randomUUID().toString()
+            AppLogger.d("TrackingEngine", "Creating new session $newSessionId for $newPackage")
             val newSession = Session(
                 id = newSessionId,
                 deviceId = deviceId,
@@ -172,6 +175,7 @@ class TrackingEngine @Inject constructor(
                 val rule = ruleRepository.getRuleForPackage(session.rawLabel)
                 val resolvedContextId = rule?.contextId
                 
+                AppLogger.d("TrackingEngine", "Closing session ${session.id} for ${session.rawLabel} at $endTime")
                 sessionRepository.updateSession(session.copy(
                     endTime = endTime,
                     contextId = resolvedContextId

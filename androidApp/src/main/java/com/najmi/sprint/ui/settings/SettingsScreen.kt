@@ -30,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.MainActivity
 import com.najmi.sprint.core.sync.auth.AuthManager
 import com.najmi.sprint.tracking.TrackingService
+import com.najmi.sprint.core.domain.model.FeatureFlags
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -38,7 +39,8 @@ import kotlinx.datetime.toLocalDateTime
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
-    onNavigateToContextManager: () -> Unit = {}
+    onNavigateToContextManager: () -> Unit = {},
+    onNavigateToDebugConsole: () -> Unit = {}
 ) {
     val lastTrackedTime by viewModel.lastTrackedSessionTime.collectAsState()
     val classifyStatus by viewModel.classifyStatus.collectAsState()
@@ -197,6 +199,61 @@ fun SettingsScreen(
                 subtitle = formatLastTrackedTime(lastTrackedTime),
                 isHealthy = lastTrackedTime != null
             )
+            
+            if (FeatureFlags.DEBUG_CONSOLE) {
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                Text(
+                    text = "DEVELOPER TOOLS",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                Card(
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onNavigateToDebugConsole),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Category, // Using Category as a placeholder, or we can use another icon. Actually, let's just use Category
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Debug Console",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "View live logs for AI and Tracking",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Icon(
+                            imageVector = Icons.Rounded.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
             
             Spacer(modifier = Modifier.height(32.dp))
             

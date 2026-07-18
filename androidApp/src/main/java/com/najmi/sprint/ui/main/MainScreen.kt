@@ -33,6 +33,7 @@ import com.najmi.sprint.feature.kanban.KanbanScreen
 import com.najmi.sprint.feature.tracker.TrackerScreen
 import com.najmi.sprint.feature.retro.RetroScreen
 import com.najmi.sprint.ui.settings.SettingsScreen
+import com.najmi.sprint.ui.settings.DebugConsoleScreen
 import com.najmi.sprint.ui.context.ContextManagerScreen
 import com.najmi.sprint.ui.project.ProjectManagerScreen
 
@@ -220,7 +221,13 @@ fun MainScreen(
             }
             composable("settings") {
                 SettingsScreen(
-                    onNavigateToContextManager = { navController.navigate("context_manager") }
+                    onNavigateToContextManager = { navController.navigate("context_manager") },
+                    onNavigateToDebugConsole = { navController.navigate("debug_console") }
+                )
+            }
+            composable("debug_console") {
+                DebugConsoleScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
             composable("context_manager") {

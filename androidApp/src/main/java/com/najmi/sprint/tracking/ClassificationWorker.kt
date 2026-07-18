@@ -1,7 +1,6 @@
 package com.najmi.sprint.tracking
 
 import android.content.Context
-import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -14,6 +13,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
+import com.najmi.sprint.core.domain.logger.AppLogger
 
 @HiltWorker
 class ClassificationWorker @AssistedInject constructor(
@@ -77,7 +77,7 @@ class ClassificationWorker @AssistedInject constructor(
 
             Result.success()
         } catch (e: Exception) {
-            Log.e("ClassificationWorker", "Failed to classify sessions", e)
+            AppLogger.e("ClassificationWorker", "Failed to classify sessions", e)
             Result.retry()
         }
     }

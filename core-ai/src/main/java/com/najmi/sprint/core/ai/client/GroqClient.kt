@@ -11,6 +11,7 @@ import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
+import com.najmi.sprint.core.domain.logger.AppLogger
 
 @Serializable
 data class GroqRequest(
@@ -68,7 +69,7 @@ class GroqClient(
 
         if (!response.status.isSuccess()) {
             val errorText = response.bodyAsText()
-            android.util.Log.e("GroqClient", "API Error: ${response.status} - $errorText")
+            AppLogger.e("GroqClient", "API Error: ${response.status} - $errorText")
             throw IllegalStateException("Groq API error: ${response.status.value}")
         }
 
