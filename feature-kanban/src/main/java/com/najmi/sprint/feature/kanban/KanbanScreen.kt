@@ -96,7 +96,7 @@ fun KanbanScreen(
                 .size(56.dp)
                 .zIndex(2f),
             containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = Color.Black,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
             shape = RoundedCornerShape(16.dp) // Large tier shape
         ) {
             Icon(Icons.Default.Add, contentDescription = "Add Task")

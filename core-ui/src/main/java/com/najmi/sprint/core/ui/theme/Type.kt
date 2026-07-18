@@ -66,18 +66,18 @@ val Typography = Typography(
         fontSize = 16.sp,
         lineHeight = 24.sp
     ),
-    labelMedium = TextStyle( // Data Role (Mono)
-        fontFamily = IBMPlexMono,
+    labelMedium = TextStyle( // Standard UI Label
+        fontFamily = Inter,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
-        lineHeight = 16.8.sp,
-        letterSpacing = 0.02.sp
+        lineHeight = 20.sp,
+        letterSpacing = 0.1.sp
     ),
-    labelSmall = TextStyle( // Data Role (Mono)
-        fontFamily = IBMPlexMono,
-        fontWeight = FontWeight.Normal,
+    labelSmall = TextStyle( // Standard UI Label
+        fontFamily = Inter,
+        fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
-        lineHeight = 12.sp,
-        letterSpacing = 0.05.sp
+        lineHeight = 16.sp,
+        letterSpacing = 0.1.sp
     )
 )

@@ -16,9 +16,7 @@ private val DarkColorScheme = darkColorScheme(
     background = DarkSurfaceBase,
     onBackground = OnDarkSurface,
     surface = DarkSurfaceSheet,
-    onSurface = OnDarkSurface,
-    surfaceVariant = SurfaceHero,
-    onSurfaceVariant = OnDarkSurface,
+    onSurface = OnDarkSurface
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -27,9 +25,7 @@ private val LightColorScheme = lightColorScheme(
     background = LightSurfaceBase,
     onBackground = OnLightSurface,
     surface = LightSurfaceSheet,
-    onSurface = OnLightSurface,
-    surfaceVariant = SurfaceHero,
-    onSurfaceVariant = OnDarkSurface, // Hero surface text is always light (on dark navy)
+    onSurface = OnLightSurface
     // Keep other defaults
 )
 

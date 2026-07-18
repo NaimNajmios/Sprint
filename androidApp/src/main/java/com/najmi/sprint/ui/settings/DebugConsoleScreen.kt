@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -71,7 +73,7 @@ fun DebugConsoleScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FilterChip(
@@ -95,11 +97,17 @@ fun DebugConsoleScreen(
             HorizontalDivider()
 
             // Log List
-            LazyColumn(
+            Surface(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF1E1E1E))
+                    .padding(16.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFF161A2C)
             ) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                ) {
                 items(filteredLogs) { log ->
                     val time = log.timestamp.toLocalDateTime(TimeZone.currentSystemDefault())
                     val timeStr = "${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}:${time.second.toString().padStart(2, '0')}"
@@ -176,6 +184,7 @@ fun DebugConsoleScreen(
                             )
                         }
                     }
+                }
                 }
             }
         }

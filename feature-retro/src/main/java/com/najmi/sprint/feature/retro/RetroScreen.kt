@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.sprint.core.domain.model.Context
@@ -66,7 +67,7 @@ fun RetroScreen(
         ) {
             LazyColumn(
                 contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 80.dp),
-                verticalArrangement = Arrangement.spacedBy(32.dp)
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 
                 // --- Top App Stat ---
@@ -80,7 +81,7 @@ fun RetroScreen(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = simplifyPackageName(state.topApp),
-                            style = MaterialTheme.typography.titleLarge, // Inter SemiBold
+                            style = MaterialTheme.typography.titleMedium, // Inter SemiBold
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -89,22 +90,39 @@ fun RetroScreen(
                 // --- AI Insights (Editorial Feel) ---
                 if (state.retros.isNotEmpty()) {
                     items(state.retros) { retro ->
-                        Column(
-                            modifier = Modifier.fillMaxWidth()
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         ) {
-                            Text(
-                                text = "AI Insight",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            // Using the DM Serif Display typography for the pull-quote feel
-                            Text(
-                                text = "“${retro.summaryText}”",
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                lineHeight = MaterialTheme.typography.headlineMedium.lineHeight
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Star,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "AI Insight",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "“${retro.summaryText}”",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontStyle = FontStyle.Italic,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    lineHeight = 28.sp
+                                )
+                            }
                         }
                     }
                 }
@@ -113,7 +131,7 @@ fun RetroScreen(
                 item {
                     Text(
                         text = "Context Breakdown",
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -132,7 +150,7 @@ fun RetroScreen(
                 item {
                     Text(
                         text = "Daily Activity",
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -192,7 +210,7 @@ fun ContextBreakdownRow(
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         LinearProgressIndicator(
             progress = { animFraction },
             modifier = Modifier
@@ -226,7 +244,7 @@ fun WeeklyBarChart(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp),
+            .height(140.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.Bottom
     ) {
@@ -237,7 +255,7 @@ fun WeeklyBarChart(
                 modifier = Modifier.weight(1f)
             ) {
                 val barHeight = if (maxMinutes > 0) {
-                    (day.totalMinutes.toFloat() / maxMinutes) * 140f * animProgress
+                    (day.totalMinutes.toFloat() / maxMinutes) * 100f * animProgress
                 } else 0f
 
                 if (day.perContext.isNotEmpty()) {
